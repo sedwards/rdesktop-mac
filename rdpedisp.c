@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Display Update Virtual Channel Extension.
    Copyright 2017 Henrik Andersson <hean01@cendio.com> for Cendio AB
    Copyright 2017 Karl Mikaelsson <derfian@cendio.se> for Cendio AB
@@ -42,7 +42,7 @@ rdpedisp_process_caps_pdu(STREAM s)
 	in_uint32_le(s, tmp[1]);	/* MaxMonitorAreaFactorA */
 	in_uint32_le(s, tmp[2]);	/* MaxMonitorAreaFactorB */
 
-	logger(Protocol, Debug,
+	logger(RDP_Protocol, Debug,
 	       "rdpedisp_process_caps_pdu(), Max supported monitor area (square pixels) is %d",
 	       tmp[0] * tmp[1] * tmp[2]);
 
@@ -66,7 +66,7 @@ rdpedisp_process_pdu(STREAM s)
 	in_uint32_le(s, type);	/* type */
 	in_uint8s(s, 4);	/* length */
 
-	logger(Protocol, Debug, "rdpedisp_process_pdu(), Got PDU type %d", type);
+	logger(RDP_Protocol, Debug, "rdpedisp_process_pdu(), Got PDU type %d", type);
 
 	switch (type)
 	{
@@ -75,7 +75,7 @@ rdpedisp_process_pdu(STREAM s)
 			break;
 
 		default:
-			logger(Protocol, Warning, "rdpedisp_process_pdu(), Unhandled PDU type %d",
+			logger(RDP_Protocol, Warning, "rdpedisp_process_pdu(), Unhandled PDU type %d",
 			       type);
 			break;
 	}
@@ -89,7 +89,7 @@ rdpedisp_send_monitor_layout_pdu(uint32 width, uint32 height)
 
 	memset(&s, 0, sizeof(s));
 
-	logger(Protocol, Debug, "rdpedisp_send_monitor_layout_pdu(), width = %d, height = %d",
+	logger(RDP_Protocol, Debug, "rdpedisp_send_monitor_layout_pdu(), width = %d, height = %d",
 	       width, height);
 
 	rdpedisp_init_packet(&s, DISPLAYCONTROL_PDU_TYPE_MONITOR_LAYOUT, 16 + 1 * 40);

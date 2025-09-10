@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
-   Protocol services - RDP decompression
+   rdesktop: A Remote Desktop RDP_Protocol client.
+   RDP_Protocol services - RDP decompression
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
 
    This program is free software: you can redistribute it and/or modify

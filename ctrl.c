@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Master/Slave remote controlling
    Copyright 2013-2017 Henrik Andersson <hean01@cendio.se> for Cendio AB
 
@@ -17,7 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "rdesktop.h"
-#include "ssl.h"
+#include "macssl.h"
 
 #include <stdio.h>
 #include <stdlib.h>

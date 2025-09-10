@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
    Copyright 2004-2011 Peter Astrand <astrand@cendio.se> for Cendio AB
    Copyright 2010-2017 Henrik Andersson <hean01@cendio.se> for Cendio AB
@@ -391,7 +391,7 @@ rdpdr_send_completion(uint32 device, uint32 id, uint32 status, uint32 result, ui
 		out_uint8a(s, buffer, length);
 	s_mark_end(s);
 
-	logger(Protocol, Debug, "rdpdr_send_completion()");
+	logger(RDP_Protocol, Debug, "rdpdr_send_completion()");
 	/* hexdump(s->channel_hdr + 8, s->end - s->channel_hdr - 8); */
 
 	channel_send(s, rdpdr_channel);
@@ -441,7 +441,7 @@ rdpdr_process_irp(STREAM s)
 
 	if (device >= RDPDR_MAX_DEVICES)
 	{
-		logger(Protocol, Error,
+		logger(RDP_Protocol, Error,
 		       "rdpdr_process_irp(), invalid irp device=0x%lx, file=0x%lx, id=0x%lx, major=0x%lx, minor=0x%lx",
 		       device, file, id, major, minor);
 		return;
@@ -479,7 +479,7 @@ rdpdr_process_irp(STREAM s)
 			break;
 #endif
 		default:
-			logger(Protocol, Error,
+			logger(RDP_Protocol, Error,
 			       "rdpdr_process_irp(), received IRP for unknown device type %ld",
 			       device);
 			return;
@@ -542,7 +542,7 @@ rdpdr_process_irp(STREAM s)
 			in_uint64_le(s, offset);
 			in_uint8s(s, 20); 	   /* 20 bytes of padding */
 
-			logger(Protocol, Debug,
+			logger(RDP_Protocol, Debug,
 			       "rdpdr_process_irp(), IRP Read length=%d, offset=%ld",
 			       length, offset);
 
@@ -599,7 +599,7 @@ rdpdr_process_irp(STREAM s)
 			in_uint64_le(s, offset);
 			in_uint8s(s, 20);        /* 20 bytes of padding before WriteData */
 
-			logger(Protocol, Debug,
+			logger(RDP_Protocol, Debug,
 			       "rdpdr_process_irp(), IRP Write length=%d, offset=%ld",
 			       result, offset);
 
@@ -741,7 +741,7 @@ rdpdr_process_irp(STREAM s)
 
 					status = RD_STATUS_INVALID_PARAMETER;
 					/* JIF */
-					logger(Protocol, Warning,
+					logger(RDP_Protocol, Warning,
 					       "rdpdr_process_irp(), unhandled minor opcode, major=0x%x, minor=0x%x",
 					       major, minor);
 			}
@@ -809,7 +809,7 @@ rdpdr_process_irp(STREAM s)
 			break;
 
 		default:
-			logger(Protocol, Warning,
+			logger(RDP_Protocol, Warning,
 			       "rdpdr_process_irp(), unhandled major opcode, major=0x%x, minor=0x%x",
 			       major, minor);
 			break;
@@ -892,7 +892,7 @@ rdpdr_process(STREAM s)
 	uint16 component;
 	uint16 pakid;
 
-	logger(Protocol, Debug, "rdpdr_process()");
+	logger(RDP_Protocol, Debug, "rdpdr_process()");
 	/* hexdump(s->p, s_remaining(s)); */
 
 	in_uint16(s, component);        /* RDPDR_HEADER.Component */
@@ -953,7 +953,7 @@ rdpdr_process(STREAM s)
 
 			case PAKID_CORE_DEVICE_REPLY:
 				in_uint32(s, handle);
-				logger(Protocol, Debug,
+				logger(RDP_Protocol, Debug,
 				       "rdpdr_process(), server connected to resource %d", handle);
 				break;
 
@@ -962,7 +962,7 @@ rdpdr_process(STREAM s)
 				break;
 
 			default:
-				logger(Protocol, Debug,
+				logger(RDP_Protocol, Debug,
 				       "rdpdr_process(), pakid 0x%x of component 0x%x", pakid,
 				       component);
 				break;
@@ -975,7 +975,7 @@ rdpdr_process(STREAM s)
 			printercache_process(s);
 	}
 	else
-		logger(Protocol, Warning, "rdpdr_process(), unhandled component 0x%x", component);
+		logger(RDP_Protocol, Warning, "rdpdr_process(), unhandled component 0x%x", component);
 }
 
 RD_BOOL
@@ -1176,7 +1176,7 @@ _rdpdr_check_fds(fd_set * rfds, fd_set * wfds, RD_BOOL timed_out)
 							iorq->offset += result;
 						}
 
-						logger(Protocol, Debug,
+						logger(RDP_Protocol, Debug,
 						       "_rdpdr_check_fds(), %d bytes of data read",
 						       result);
 
@@ -1185,7 +1185,7 @@ _rdpdr_check_fds(fd_set * rfds, fd_set * wfds, RD_BOOL timed_out)
 						if ((iorq->partial_len == iorq->length) ||
 						    (result == 0))
 						{
-							logger(Protocol, Debug,
+							logger(RDP_Protocol, Debug,
 							       "_rdpdr_check_fds(), AIO total %u bytes read of %u",
 							       iorq->partial_len, iorq->length);
 							rdpdr_send_completion(iorq->device,
@@ -1220,7 +1220,7 @@ _rdpdr_check_fds(fd_set * rfds, fd_set * wfds, RD_BOOL timed_out)
 							iorq->offset += result;
 						}
 
-						logger(Protocol, Debug,
+						logger(RDP_Protocol, Debug,
 						       "_rdpdr_check_fds(), %d bytes of data written",
 						       result);
 
@@ -1229,7 +1229,7 @@ _rdpdr_check_fds(fd_set * rfds, fd_set * wfds, RD_BOOL timed_out)
 						if ((iorq->partial_len == iorq->length)
 						    || (result == 0))
 						{
-							logger(Protocol, Debug,
+							logger(RDP_Protocol, Debug,
 							       "_rdpdr_check_fds(), AIO total %u bytes written of %u",
 							       iorq->partial_len, iorq->length);
 							rdpdr_send_completion(iorq->device,

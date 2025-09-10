@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Generic utility functions
    Copyright 2013-2019 Henrik Andersson <hean01@cendio.se> for Cendio AB
 
@@ -26,6 +26,7 @@
 #include <assert.h>
 
 #include "rdesktop.h"
+#include "macssl.h"
 
 #include "utils.h"
 
@@ -354,7 +355,7 @@ static char *subject[] = {
 	"Keyboard",
 	"Clipboard",
 	"Sound",
-	"Protocol",
+	"RDP_Protocol",
 	"Graphics",
 	"Core",
 	"SmartCard",
@@ -370,7 +371,7 @@ static log_level_t _logger_level = Warning;
 	| (1 << Keyboard)			\
 	| (1 << Clipboard)			\
 	| (1 << Sound)				\
-	| (1 << Protocol)			\
+	| (1 << RDP_Protocol)			\
 	| (1 << Graphics)			\
 	| (1 << Core)				\
 	| (1 << SmartCard)                      \
@@ -463,8 +464,8 @@ logger_set_subjects(char *subjects)
 			bit = (1 << Clipboard);
 		else if (strcmp(token, "Sound") == 0)
 			bit = (1 << Sound);
-		else if (strcmp(token, "Protocol") == 0)
-			bit = (1 << Protocol);
+		else if (strcmp(token, "RDP_Protocol") == 0)
+			bit = (1 << RDP_Protocol);
 		else if (strcmp(token, "Graphics") == 0)
 			bit = (1 << Graphics);
 		else if (strcmp(token, "Core") == 0)

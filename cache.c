@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Cache routines
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
    Copyright (C) Jeroen Meijer <jeroen@oldambt7.com> 2005

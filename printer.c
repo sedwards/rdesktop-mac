@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
 
    This program is free software: you can redistribute it and/or modify

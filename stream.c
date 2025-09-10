@@ -1,5 +1,5 @@
 /*
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Parsing primitives
    Copyright 2017 Henrik Andersson <hean01@cendio.se> for Cendio AB
 
@@ -130,7 +130,7 @@ _out_utf16s(STREAM s, size_t maxlength, const char *string)
 
 	if (iconv(icv_local_to_utf16, (char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
 	{
-		logger(Protocol, Error, "out_utf16s(), iconv(2) fail, errno %d", errno);
+		logger(RDP_Protocol, Error, "out_utf16s(), iconv(2) fail, errno %d", errno);
 		abort();
 	}
 

@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Sound Channel Process Functions
    Copyright 2006-2010 Pierre Ossman <ossman@cendio.se> for Cendio AB
    Copyright 2009-2011 Peter Astrand <astrand@cendio.se> for Cendio AB

@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
 
    This program is free software: you can redistribute it and/or modify
@@ -179,14 +179,14 @@ parallel_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM ou
 	request >>= 2;
 	request &= 0xfff;
 
-	logger(Protocol, Debug, "parallel_device_control(), ioctl %d", request);
+	logger(RDP_Protocol, Debug, "parallel_device_control(), ioctl %d", request);
 
 	switch (request)
 	{
 		case IOCTL_PAR_QUERY_RAW_DEVICE_ID:
 
 		default:
-			logger(Protocol, Warning, "parallel_device_control(), unhandled ioctl %d",
+			logger(RDP_Protocol, Warning, "parallel_device_control(), unhandled ioctl %d",
 			       request);
 	}
 	return RD_STATUS_SUCCESS;

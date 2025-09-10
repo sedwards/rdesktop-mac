@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Entrypoint and utility functions
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
    Copyright (C) Jeroen Meijer <jeroen@oldambt7.com> 2003-2008
@@ -314,7 +314,7 @@ printercache_process(STREAM s)
 			printercache_save_blob(device_name, blob, blob_length);
 			break;
 		default:
-			logger(Protocol, Warning,
+			logger(RDP_Protocol, Warning,
 			       "printercache_process(), unhandled packet type %d", type);
 			break;
 	}

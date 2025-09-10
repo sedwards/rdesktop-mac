@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Dynamic Channel Virtual Channel Extension.
    Copyright 2017 Henrik Andersson <hean01@cendio.com> for Cendio AB
    Copyright 2017 Karl Mikaelsson <derfian@cendio.se> for Cendio AB
@@ -283,7 +283,7 @@ dvc_send_capabilities_response()
 	hdr.hdr.sp = 0x00;
 	hdr.hdr.cmd = DYNVC_CAPABILITIES;
 
-	logger(Protocol, Debug,
+	logger(RDP_Protocol, Debug,
 	       "dvc_send_capabilities_response(), offering support for dvc %d", supportedversion);
 
 	s = dvc_init_packet(hdr, -1, 3);
@@ -305,7 +305,7 @@ dvc_process_caps_pdu(STREAM s)
 	in_uint8s(s, 1);	/* pad */
 	in_uint16_le(s, version);	/* version */
 
-	logger(Protocol, Debug, "dvc_process_caps(), server supports dvc %d", version);
+	logger(RDP_Protocol, Debug, "dvc_process_caps(), server supports dvc %d", version);
 
 	dvc_send_capabilities_response();
 }
@@ -315,7 +315,7 @@ dvc_send_create_response(RD_BOOL success, dvc_hdr_t hdr, uint32 channelid)
 {
 	STREAM s;
 
-	logger(Protocol, Debug, "dvc_send_create_response(), %s request to create channelid %d",
+	logger(RDP_Protocol, Debug, "dvc_send_create_response(), %s request to create channelid %d",
 	       (success ? "granted" : "denied"), channelid);
 	s = dvc_init_packet(hdr, channelid, 4);
 	out_uint32_le(s, success ? 0 : -1);
@@ -335,7 +335,7 @@ dvc_process_create_pdu(STREAM s, dvc_hdr_t hdr)
 
 	in_ansi_string(s, name, sizeof(name));
 
-	logger(Protocol, Debug, "dvc_process_create(), server requests channelid = %d, name = '%s'",
+	logger(RDP_Protocol, Debug, "dvc_process_create(), server requests channelid = %d, name = '%s'",
 	       channelid, name);
 
 	if (dvc_channels_exists(name))
@@ -384,7 +384,7 @@ dvc_process_data_pdu(STREAM s, dvc_hdr_t hdr)
 	ch = dvc_channels_get_by_id(channelid);
 	if (ch == NULL)
 	{
-		logger(Protocol, Warning,
+		logger(RDP_Protocol, Warning,
 		       "dvc_process_data(), Received data on unregistered channel %d", channelid);
 		return;
 	}
@@ -399,11 +399,11 @@ dvc_process_close_pdu(STREAM s, dvc_hdr_t hdr)
 	uint32 channelid;
 
 	channelid = dvc_in_channelid(s, hdr);
-	logger(Protocol, Debug, "dvc_process_close_pdu(), close channel %d", channelid);
+	logger(RDP_Protocol, Debug, "dvc_process_close_pdu(), close channel %d", channelid);
 
 	if (!dvc_channels_remove_by_id(channelid))
 	{
-		logger(Protocol, Warning,
+		logger(RDP_Protocol, Warning,
 		       "dvc_process_close_pdu(), Received close request for unregistered channel %d",
 		       channelid);
 		return;
@@ -451,7 +451,7 @@ dvc_process_pdu(STREAM s)
 #endif
 
 		default:
-			logger(Protocol, Warning, "dvc_process_pdu(), Unhandled command type 0x%x",
+			logger(RDP_Protocol, Warning, "dvc_process_pdu(), Unhandled command type 0x%x",
 			       hdr.hdr.cmd);
 			break;
 	}

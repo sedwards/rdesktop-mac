@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
-   Protocol services - Clipboard functions
+   rdesktop: A Remote Desktop RDP_Protocol client.
+   RDP_Protocol services - Clipboard functions
    Copyright 2003-2008 Erik Forsberg <forsberg@cendio.se> for Cendio AB
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 2003-2008
    Copyright 2006-2011 Pierre Ossman <ossman@cendio.se> for Cendio AB

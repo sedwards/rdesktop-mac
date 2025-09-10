@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Disk Redirection
    Copyright (C) Jeroen Meijer <jeroen@oldambt7.com> 2003-2008
    Copyright 2003-2011 Peter Astrand <astrand@cendio.se> for Cendio AB

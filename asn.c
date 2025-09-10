@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    ASN.1 utility functions
    Copyright 2012-2017 Henrik Andersson <hean01@cendio.se> for Cendio AB
    Copyright 2017 Alexander Zakharov <uglym8@gmail.com>
@@ -18,8 +18,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <gnutls/gnutls.h>
-#include <libtasn1.h>
+// Native macOS SSL - use compatibility layer
+#include "macssl.h"
 #include <stdlib.h>
 
 #include "rdesktop.h"

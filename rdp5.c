@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
-   Protocol services - RDP Fast-Path PDU processing
+   rdesktop: A Remote Desktop RDP_Protocol client.
+   RDP_Protocol services - RDP Fast-Path PDU processing
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
    Copyright 2003-2008 Erik Forsberg <forsberg@cendio.se> for Cendio AB
    Copyright 2017 Karl Mikaelsson <derfian@cendio.se> for Cendio AB
@@ -68,7 +68,7 @@ process_ts_fp_update_by_code(STREAM s, uint8 code)
 			process_new_pointer_pdu(s);
 			break;
 		default:
-			logger(Protocol, Warning,
+			logger(RDP_Protocol, Warning,
 			       "process_ts_fp_updates_by_code(), unhandled opcode %d", code);
 	}
 }
@@ -107,7 +107,7 @@ process_ts_fp_updates(STREAM s)
 		{
 			in_uint8p(s, buf, length);
 			if (mppc_expand(buf, length, ctype, &roff, &rlen) == -1)
-				logger(Protocol, Error,
+				logger(RDP_Protocol, Error,
 				       "process_ts_fp_update_pdu(), error while decompressing packet");
 
 			/* allocate memory and copy the uncompressed data into the temporary stream */

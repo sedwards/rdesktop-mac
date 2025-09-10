@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
 
    Support functions for Extended Window Manager Hints,
    http://www.freedesktop.org/wiki/Standards_2fwm_2dspec

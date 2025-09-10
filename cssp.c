@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    CredSSP layer and Kerberos support.
    Copyright 2012-2017 Henrik Andersson <hean01@cendio.se> for Cendio AB
 

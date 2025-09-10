@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
-   Protocol services - TCP layer
+   rdesktop: A Remote Desktop RDP_Protocol client.
+   RDP_Protocol services - TCP layer
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
    Copyright 2005-2011 Peter Astrand <astrand@cendio.se> for Cendio AB
    Copyright 2012-2019 Henrik Andersson <hean01@cendio.se> for Cendio AB
@@ -33,11 +33,9 @@
 #include <assert.h>
 #endif
 
-#include <gnutls/gnutls.h>
-#include <gnutls/x509.h>
-
+// Native macOS SSL - no GNUTLS includes needed
 #include "rdesktop.h"
-#include "ssl.h"
+#include "macssl.h"
 #include "asn.h"
 
 #ifdef _WIN32

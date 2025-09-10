@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Secure sockets abstraction layer
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
    Copyright (C) Jay Sorg <j@american-data.com> 2006-2008
@@ -119,13 +119,13 @@ rdssl_cert_read(uint8 * data, uint32 len)
 	cert = malloc(sizeof(*cert));
 
 	if (!cert) {
-		logger(Protocol, Error, "%s:%s:%d: Failed to allocate memory for certificate structure.\n",
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to allocate memory for certificate structure.\n",
 				__FILE__, __func__, __LINE__);
 		return NULL;
 	}
 
 	if ((ret = gnutls_x509_crt_init(cert)) != GNUTLS_E_SUCCESS) {
-		logger(Protocol, Error, "%s:%s:%d: Failed to init certificate structure. GnuTLS error = 0x%02x (%s)\n",
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to init certificate structure. GnuTLS error = 0x%02x (%s)\n",
 				__FILE__, __func__, __LINE__, ret, gnutls_strerror(ret));
 
 		return NULL;
@@ -135,7 +135,7 @@ rdssl_cert_read(uint8 * data, uint32 len)
 	cert_data.data = data;
 
 	if ((ret = gnutls_x509_crt_import(*cert, &cert_data, GNUTLS_X509_FMT_DER)) != GNUTLS_E_SUCCESS) {
-		logger(Protocol, Error, "%s:%s:%d: Failed to import DER encoded certificate. GnuTLS error = 0x%02x (%s)\n",
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to import DER encoded certificate. GnuTLS error = 0x%02x (%s)\n",
 				__FILE__, __func__, __LINE__, ret, gnutls_strerror(ret));
 		return NULL;
 	}
@@ -193,7 +193,7 @@ rdssl_cert_to_rkey(RDSSL_CERT * cert, uint32 * key_len)
 	if (algo == GNUTLS_PK_RSA) {
 
 		if ((ret = gnutls_x509_crt_get_pk_rsa_raw(*cert, &m, &e)) !=  GNUTLS_E_SUCCESS) {
-			logger(Protocol, Error, "%s:%s:%d: Failed to get RSA public key parameters from certificate. GnuTLS error = 0x%02x (%s)\n",
+			logger(RDP_Protocol, Error, "%s:%s:%d: Failed to get RSA public key parameters from certificate. GnuTLS error = 0x%02x (%s)\n",
 					__FILE__, __func__, __LINE__, ret, gnutls_strerror(ret));
 			return NULL;
 		}
@@ -202,7 +202,7 @@ rdssl_cert_to_rkey(RDSSL_CERT * cert, uint32 * key_len)
 
 		len = sizeof(data);
 		if ((ret = gnutls_x509_crt_export(*cert, GNUTLS_X509_FMT_DER, data, &len)) != GNUTLS_E_SUCCESS) {
-			logger(Protocol, Error, "%s:%s:%d: Failed to encode X.509 certificate to DER. GnuTLS error = 0x%02x (%s)\n",
+			logger(RDP_Protocol, Error, "%s:%s:%d: Failed to encode X.509 certificate to DER. GnuTLS error = 0x%02x (%s)\n",
 					__FILE__, __func__, __LINE__, ret, gnutls_strerror(ret));
 			return NULL;
 		}
@@ -211,7 +211,7 @@ rdssl_cert_to_rkey(RDSSL_CERT * cert, uint32 * key_len)
 		   or OID_MD5_WITH_RSA_SIGNATURE
 		*/
 		if ((ret = libtasn_read_cert_pk_oid(data, len, oid, &oid_size)) != 0) {
-			logger(Protocol, Error, "%s:%s:%d: Failed to get OID of public key algorithm.\n",
+			logger(RDP_Protocol, Error, "%s:%s:%d: Failed to get OID of public key algorithm.\n",
 					__FILE__, __func__, __LINE__);
 			return NULL;
 		}
@@ -219,21 +219,21 @@ rdssl_cert_to_rkey(RDSSL_CERT * cert, uint32 * key_len)
 		if (!(strncmp(oid, OID_SHA_WITH_RSA_SIGNATURE, strlen(OID_SHA_WITH_RSA_SIGNATURE)) == 0
 				|| strncmp(oid, OID_MD5_WITH_RSA_SIGNATURE, strlen(OID_MD5_WITH_RSA_SIGNATURE)) == 0))
 		{
-			logger(Protocol, Error, "%s:%s:%d: Wrong public key algorithm algo = 0x%02x (%s)\n",
+			logger(RDP_Protocol, Error, "%s:%s:%d: Wrong public key algorithm algo = 0x%02x (%s)\n",
 					__FILE__, __func__, __LINE__, algo, oid);
 			return NULL;
 		}
 
 		/* Get public key parameters */
 		if ((ret = libtasn_read_cert_pk_parameters(data, len, &m, &e)) != 0) {
-			logger(Protocol, Error, "%s:%s:%d: Failed to read RSA public key parameters\n",
+			logger(RDP_Protocol, Error, "%s:%s:%d: Failed to read RSA public key parameters\n",
 					__FILE__, __func__, __LINE__);
 
 			return NULL;
 		}
 
 	} else {
-		logger(Protocol, Error, "%s:%s:%d: Failed to get public key algorithm from certificate. algo = 0x%02x (%d)\n",
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to get public key algorithm from certificate. algo = 0x%02x (%d)\n",
 				__FILE__, __func__, __LINE__, algo, algo);
 		return NULL;
 	}
@@ -241,7 +241,7 @@ rdssl_cert_to_rkey(RDSSL_CERT * cert, uint32 * key_len)
 	pkey = malloc(sizeof(*pkey));
 
 	if (!pkey) {
-		logger(Protocol, Error, "%s:%s:%d: Failed to allocate memory for  RSA public key\n",
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to allocate memory for  RSA public key\n",
 				__FILE__, __func__, __LINE__);
 		return NULL;
 	}
