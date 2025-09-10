@@ -41,9 +41,9 @@
 
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
-#endif
 #ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
+#endif
 #endif
 
 #ifdef EGD_SOCKET
@@ -1252,11 +1252,7 @@ rdesktop_main(int argc, char *argv[])
 	{
 		if (setlocale(LC_CTYPE, ""))
 		{
-#ifdef HAVE_LANGINFO_H
 			STRNCPY(g_codepage, nl_langinfo(CODESET), sizeof(g_codepage));
-#else
-			STRNCPY(g_codepage, DEFAULT_CODEPAGE, sizeof(g_codepage));
-#endif
 		}
 		else
 		{
@@ -2173,8 +2169,4 @@ rd_lock_file(int fd, int start, int len)
 	return True;
 }
 
-/* Main function wrapper for command line usage */
-int main(int argc, char *argv[])
-{
-	return rdesktop_main(argc, argv);
-}
+/* Main function removed - this file is for GUI builds only */

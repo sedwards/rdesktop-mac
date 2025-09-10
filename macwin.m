@@ -447,12 +447,61 @@ void ui_bell(void) { NSBeep(); }
 
 /* Drawing operations - basic implementations */
 void ui_destblt(uint8 opcode, int x, int y, int cx, int cy) {}
-void ui_patblt(uint8 opcode, int x, int y, int cx, int cy, BRUSH * brush, uint32 bgcolor, uint32 fgcolor) {}
+void ui_patblt(uint8 opcode, int x, int y, int cx, int cy, BRUSH * brush, uint32 bgcolor, uint32 fgcolor) {
+    if (!g_view || !g_view.backingStore) return;
+    
+    CGContextRef context = g_view.backingStore;
+    CGRect rect = CGRectMake(x, g_view.backingStoreSize.height - y - cy, cx, cy);
+    
+    // Convert bgcolor from 32-bit RGBA to CGColor components
+    float r = ((bgcolor >> 16) & 0xFF) / 255.0f;
+    float g = ((bgcolor >> 8) & 0xFF) / 255.0f;
+    float b = (bgcolor & 0xFF) / 255.0f;
+    float a = 1.0f;
+    
+    CGContextSetRGBFillColor(context, r, g, b, a);
+    
+    switch(opcode) {
+        case ROP2_COPY:
+            CGContextFillRect(context, rect);
+            break;
+        case ROP2_XOR:
+            CGContextSetBlendMode(context, kCGBlendModeExclusion);
+            CGContextFillRect(context, rect);
+            CGContextSetBlendMode(context, kCGBlendModeNormal);
+            break;
+        default:
+            CGContextFillRect(context, rect);
+            break;
+    }
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [g_view setNeedsDisplayInRect:NSMakeRect(x, y, cx, cy)];
+    });
+}
 void ui_screenblt(uint8 opcode, int x, int y, int cx, int cy, int srcx, int srcy) {}
 void ui_memblt(uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy) {}
 void ui_triblt(uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy, BRUSH * brush, uint32 bgcolor, uint32 fgcolor) {}
 void ui_line(uint8 opcode, int startx, int starty, int endx, int endy, PEN * pen) {}
-void ui_rect(int x, int y, int cx, int cy, uint32 colour) {}
+void ui_rect(int x, int y, int cx, int cy, uint32 colour) {
+    if (!g_view || !g_view.backingStore) return;
+    
+    CGContextRef context = g_view.backingStore;
+    CGRect rect = CGRectMake(x, g_view.backingStoreSize.height - y - cy, cx, cy);
+    
+    // Convert color from 32-bit RGBA to CGColor components
+    float r = ((colour >> 16) & 0xFF) / 255.0f;
+    float g = ((colour >> 8) & 0xFF) / 255.0f;
+    float b = (colour & 0xFF) / 255.0f;
+    float a = 1.0f;
+    
+    CGContextSetRGBFillColor(context, r, g, b, a);
+    CGContextFillRect(context, rect);
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [g_view setNeedsDisplayInRect:NSMakeRect(x, y, cx, cy)];
+    });
+}
 void ui_polygon(uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints, BRUSH * brush, uint32 bgcolor, uint32 fgcolor) {}
 void ui_polyline(uint8 opcode, RD_POINT * points, int npoints, PEN * pen) {}
 void ui_ellipse(uint8 opcode, uint8 fillmode, int x, int y, int cx, int cy, BRUSH * brush, uint32 bgcolor, uint32 fgcolor) {}

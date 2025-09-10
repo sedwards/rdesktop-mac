@@ -20,10 +20,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <stdarg.h>		/* va_list va_start va_end */
 #include <unistd.h>		/* read close getuid getgid getpid getppid gethostname */
 #include <fcntl.h>		/* open */
@@ -1252,11 +1248,7 @@ rdesktop_main(int argc, char *argv[])
 	{
 		if (setlocale(LC_CTYPE, ""))
 		{
-#ifdef HAVE_LANGINFO_H
 			STRNCPY(g_codepage, nl_langinfo(CODESET), sizeof(g_codepage));
-#else
-			STRNCPY(g_codepage, DEFAULT_CODEPAGE, sizeof(g_codepage));
-#endif
 		}
 		else
 		{
@@ -2173,8 +2165,10 @@ rd_lock_file(int fd, int start, int len)
 	return True;
 }
 
-/* Main function wrapper for command line usage */
+#ifndef MAC_GUI_BUILD
+/* Main function wrapper for X11 build */
 int main(int argc, char *argv[])
 {
 	return rdesktop_main(argc, argv);
 }
+#endif

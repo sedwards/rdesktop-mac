@@ -1,6 +1,8 @@
 AC_INIT([rdesktop],[1.9.0])
 
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([rdesktop.c])
+AC_CONFIG_MACRO_DIRS([m4])
 
 AC_CANONICAL_HOST
 
@@ -9,6 +11,7 @@ if test "$GCC" = yes; then
     CFLAGS="$CFLAGS -Wall -Wextra"
 fi
 
+LT_INIT
 AC_PROG_INSTALL
 AC_LANG([C])
 m4_warn([obsolete],
@@ -20,7 +23,7 @@ m4_warn([obsolete],
 AC_CHECK_INCLUDES_DEFAULT
 AC_PROG_EGREP
 
-AC_C_BIGENDIAN([AC_DEFINE(B_ENDIAN)], [AC_DEFINE(L_ENDIAN)])
+AC_C_BIGENDIAN([AC_DEFINE(B_ENDIAN, 1, [Define for big endian systems])], [AC_DEFINE(L_ENDIAN, 1, [Define for little endian systems])])
 dnl Disable X11 support for macOS build
 dnl AC_PATH_XTRA
 no_x=yes
@@ -37,13 +40,13 @@ AC_SEARCH_LIBS([__gmpz_init], [gmp])
 AC_SEARCH_LIBS(socket, socket)
 AC_SEARCH_LIBS(inet_aton, resolv)
 
-AC_CHECK_HEADER(sys/select.h, AC_DEFINE(HAVE_SYS_SELECT_H))
-AC_CHECK_HEADER(sys/modem.h, AC_DEFINE(HAVE_SYS_MODEM_H))
-AC_CHECK_HEADER(sys/filio.h, AC_DEFINE(HAVE_SYS_FILIO_H))
-AC_CHECK_HEADER(sys/strtio.h, AC_DEFINE(HAVE_SYS_STRTIO_H))
-AC_CHECK_HEADER(locale.h, AC_DEFINE(HAVE_LOCALE_H))
-AC_CHECK_HEADER(langinfo.h, AC_DEFINE(HAVE_LANGINFO_H))
-AC_CHECK_HEADER(sysexits.h, AC_DEFINE(HAVE_SYSEXITS_H))
+AC_CHECK_HEADER(sys/select.h, AC_DEFINE(HAVE_SYS_SELECT_H, 1, [Define to 1 if you have sys/select.h]))
+AC_CHECK_HEADER(sys/modem.h, AC_DEFINE(HAVE_SYS_MODEM_H, 1, [Define to 1 if you have sys/modem.h]))
+AC_CHECK_HEADER(sys/filio.h, AC_DEFINE(HAVE_SYS_FILIO_H, 1, [Define to 1 if you have sys/filio.h]))
+AC_CHECK_HEADER(sys/strtio.h, AC_DEFINE(HAVE_SYS_STRTIO_H, 1, [Define to 1 if you have sys/strtio.h]))
+AC_CHECK_HEADER(locale.h, AC_DEFINE(HAVE_LOCALE_H, 1, [Define to 1 if you have locale.h]))
+AC_CHECK_HEADER(langinfo.h, AC_DEFINE(HAVE_LANGINFO_H, 1, [Define to 1 if you have langinfo.h]))
+AC_CHECK_HEADER(sysexits.h, AC_DEFINE(HAVE_SYSEXITS_H, 1, [Define to 1 if you have sysexits.h]))
 
 dnl AC_CHECK_TOOL(STRIP, strip, :)
 STRIP=:
@@ -102,7 +105,7 @@ AS_IF([test "x$enable_credssp" != "xno"], [
 	      CFLAGS="$CFLAGS $GSSAPI_CFLAGS"
 	      LIBS="$LIBS $GSSAPI_LIBS"
 
-	      AC_DEFINE(WITH_CREDSSP)
+	      AC_DEFINE(WITH_CREDSSP, 1, [Define to 1 if CredSSP support is enabled])
 	  else
 		echo
 		echo "CredSSP support requires GSSAPI, install the dependency"
@@ -198,7 +201,7 @@ AS_IF([test "x$enable_smartcard" != "xno"], [
 	   SCARDOBJ="scard.o"
 	   CFLAGS="$CFLAGS $PCSCLITE_CFLAGS"
 	   LIBS="$LIBS $PCSCLITE_LIBS"
-	   AC_DEFINE(WITH_SCARD)
+	   AC_DEFINE(WITH_SCARD, 1, [Define to 1 if smartcard support is enabled])
 	else
 	   echo
 	   echo "SmartCard support requires PCSC, install the dependency"
@@ -209,7 +212,7 @@ AS_IF([test "x$enable_smartcard" != "xno"], [
 
 	AC_MSG_CHECKING([for PCSC-lite >= 1.6.0 (PnP/Notifications support)])
 	PKG_CHECK_MODULES(PNP_NOTIFICATIONS, libpcsclite >= 1.6.0, [WITH_PNP_NOTIFICATIONS=1], [WITH_PNP_NOTIFICATIONS=0])
-	AC_DEFINE(WITH_PNP_NOTIFICATIONS)
+	AC_DEFINE(WITH_PNP_NOTIFICATIONS, 1, [Define to 1 if PnP notifications are supported])
 
 	AC_MSG_CHECKING([for old version of PCSC])
 	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
@@ -242,8 +245,8 @@ int main(int argc, char **argv)
 	}
 	return 0;
 }]])],[AC_MSG_RESULT(no)],[AC_MSG_RESULT(yes)
-  AC_DEFINE(NEED_ALIGN)],[AC_MSG_RESULT(assuming yes)
-  AC_DEFINE(NEED_ALIGN)])
+  AC_DEFINE(NEED_ALIGN, 1, [Define to 1 if architecture needs alignment])],[AC_MSG_RESULT(assuming yes)
+  AC_DEFINE(NEED_ALIGN, 1, [Define to 1 if architecture needs alignment])])
 
 
 #
@@ -254,7 +257,7 @@ AC_ARG_WITH(egd-socket,
     [EGD_SOCKET="$withval"],
     [EGD_SOCKET="/var/run/egd-pool"]
 )
-AC_DEFINE_UNQUOTED(EGD_SOCKET, "$EGD_SOCKET")
+AC_DEFINE_UNQUOTED(EGD_SOCKET, "$EGD_SOCKET", [Path to EGD socket])
 
 
 #
@@ -301,46 +304,46 @@ if test "$sound" != "no"; then
     SOUNDOBJ="$SOUNDOBJ rdpsnd.o rdpsnd_dsp.o"
     CFLAGS="$CFLAGS $LIBSAMPLERATE_CFLAGS"
     LIBS="$LIBS $LIBSAMPLERATE_LIBS"
-    AC_DEFINE(WITH_RDPSND)
+    AC_DEFINE(WITH_RDPSND, 1, [Define to 1 if sound support is enabled])
 fi
 
 case $sound in
     yes)
         if test x"$HAVE_OSS" = "x1"; then
             SOUNDOBJ="$SOUNDOBJ rdpsnd_oss.o"
-            AC_DEFINE(RDPSND_OSS)
+            AC_DEFINE(RDPSND_OSS, 1, [Define to 1 if OSS sound support is enabled])
         fi
 
         if test x"$HAVE_SGI" = "x1"; then
             SOUNDOBJ="$SOUNDOBJ rdpsnd_sgi.o"
             LIBS="$LIBS -laudio"
-            AC_DEFINE(RDPSND_SGI)
+            AC_DEFINE(RDPSND_SGI, 1, [Define to 1 if SGI sound support is enabled])
         fi
 
         if test x"$HAVE_SUN" = "x1"; then
             SOUNDOBJ="$SOUNDOBJ rdpsnd_sun.o"
-            AC_DEFINE(RDPSND_SUN)
+            AC_DEFINE(RDPSND_SUN, 1, [Define to 1 if SUN sound support is enabled])
         fi
 
         if test x"$HAVE_ALSA" = "x1"; then
             SOUNDOBJ="$SOUNDOBJ rdpsnd_alsa.o"
             CFLAGS="$CFLAGS $ALSA_CFLAGS"
             LIBS="$LIBS $ALSA_LIBS"
-            AC_DEFINE(RDPSND_ALSA)
+            AC_DEFINE(RDPSND_ALSA, 1, [Define to 1 if ALSA sound support is enabled])
         fi
 
         if test x"$HAVE_PULSE" = "x1"; then
             SOUNDOBJ="$SOUNDOBJ rdpsnd_pulse.o"
             CFLAGS="$CFLAGS $PULSE_CFLAGS"
             LIBS="$LIBS $PULSE_LIBS"
-            AC_DEFINE(RDPSND_PULSE)
+            AC_DEFINE(RDPSND_PULSE, 1, [Define to 1 if PulseAudio sound support is enabled])
         fi
 
         if test x"$HAVE_LIBAO" = "x1"; then
             SOUNDOBJ="$SOUNDOBJ rdpsnd_libao.o"
             CFLAGS="$CFLAGS $LIBAO_CFLAGS"
             LIBS="$LIBS $LIBAO_LIBS"
-            AC_DEFINE(RDPSND_LIBAO)
+            AC_DEFINE(RDPSND_LIBAO, 1, [Define to 1 if LibAO sound support is enabled])
         fi
 
         ;;
@@ -348,7 +351,7 @@ case $sound in
     oss)
         if test x"$HAVE_OSS" = "x1"; then
             SOUNDOBJ="$SOUNDOBJ rdpsnd_oss.o"
-            AC_DEFINE(RDPSND_OSS)
+            AC_DEFINE(RDPSND_OSS, 1, [Define to 1 if OSS sound support is enabled])
         else
             AC_MSG_ERROR([Selected sound system is not available.])
         fi
@@ -358,7 +361,7 @@ case $sound in
         if test x"$HAVE_SGI" = "x1"; then
             SOUNDOBJ="$SOUNDOBJ rdpsnd_sgi.o"
             LIBS="$LIBS -laudio"
-            AC_DEFINE(RDPSND_SGI)
+            AC_DEFINE(RDPSND_SGI, 1, [Define to 1 if SGI sound support is enabled])
         else
             AC_MSG_ERROR([Selected sound system is not available.])
         fi
@@ -367,7 +370,7 @@ case $sound in
     sun)
         if test x"$HAVE_SUN" = "x1"; then
             SOUNDOBJ="$SOUNDOBJ rdpsnd_sun.o"
-            AC_DEFINE(RDPSND_SUN)
+            AC_DEFINE(RDPSND_SUN, 1, [Define to 1 if SUN sound support is enabled])
         else
             AC_MSG_ERROR([Selected sound system is not available.])
         fi
@@ -378,7 +381,7 @@ case $sound in
             SOUNDOBJ="$SOUNDOBJ rdpsnd_alsa.o"
             CFLAGS="$CFLAGS $ALSA_CFLAGS"
             LIBS="$LIBS $ALSA_LIBS"
-            AC_DEFINE(RDPSND_ALSA)
+            AC_DEFINE(RDPSND_ALSA, 1, [Define to 1 if ALSA sound support is enabled])
         else
             AC_MSG_ERROR([Selected sound system is not available.])
         fi
@@ -389,7 +392,7 @@ case $sound in
             SOUNDOBJ="$SOUNDOBJ rdpsnd_pulse.o"
             CFLAGS="$CFLAGS $PULSE_CFLAGS"
             LIBS="$LIBS $PULSE_LIBS"
-            AC_DEFINE(RDPSND_PULSE)
+            AC_DEFINE(RDPSND_PULSE, 1, [Define to 1 if PulseAudio sound support is enabled])
         else
             AC_MSG_ERROR([Selected sound system is not available.])
         fi
@@ -400,7 +403,7 @@ case $sound in
             SOUNDOBJ="$SOUNDOBJ rdpsnd_libao.o"
             CFLAGS="$CFLAGS $LIBAO_CFLAGS"
             LIBS="$LIBS $LIBAO_LIBS"
-            AC_DEFINE(RDPSND_LIBAO)
+            AC_DEFINE(RDPSND_LIBAO, 1, [Define to 1 if LibAO sound support is enabled])
         else
             AC_MSG_ERROR([Selected sound system is not available.])
         fi
@@ -517,7 +520,7 @@ AC_DEFUN([UTILS_FUNC_ICONV],
       if test -d $dir/lib; then LDFLAGS="$LDFLAGS -L$dir/lib"; fi
     done
    ])
-  AC_CHECK_HEADER(iconv.h, AC_DEFINE(HAVE_ICONV_H))
+  AC_CHECK_HEADER(iconv.h, AC_DEFINE(HAVE_ICONV_H, 1, [Define to 1 if you have iconv.h]))
 
   AC_CACHE_CHECK(for iconv, am_cv_func_iconv, [
     am_cv_func_iconv="no, consider installing GNU libiconv"
@@ -835,7 +838,7 @@ AC_SYS_LARGEFILE
 #
 # mntent
 #
-AC_CHECK_HEADER(mntent.h, AC_DEFINE(HAVE_MNTENT_H))
+AC_CHECK_HEADER(mntent.h, AC_DEFINE(HAVE_MNTENT_H, 1, [Define to 1 if you have mntent.h]))
 AC_CHECK_FUNCS(setmntent)
 
 #
