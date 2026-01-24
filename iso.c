@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
-   Protocol services - ISO layer
+   rdesktop: A Remote Desktop RDP_Protocol client.
+   RDP_Protocol services - ISO layer
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
    Copyright 2005-2011 Peter Astrand <astrand@cendio.se> for Cendio AB
    Copyright 2012-2018 Henrik Andersson <hean01@cendio.se> for Cendio AB
@@ -138,7 +138,7 @@ iso_recv_msg(uint8 * code, RD_BOOL * is_fastpath, uint8 * fastpath_hdr)
 
 	if (length < 4)
 	{
-		logger(Protocol, Error, "iso_recv_msg(), bad packet header, length < 4");
+		logger(RDP_Protocol, Error, "iso_recv_msg(), bad packet header, length < 4");
 		return NULL;
 	}
 
@@ -208,7 +208,7 @@ iso_recv(RD_BOOL * is_fastpath, uint8 * fastpath_hdr)
 
 	if (code != ISO_PDU_DT)
 	{
-		logger(Protocol, Error, "iso_recv(), expected ISO_PDU_DT, got 0x%x", code);
+		logger(RDP_Protocol, Error, "iso_recv(), expected ISO_PDU_DT, got 0x%x", code);
 		return NULL;
 	}
 	return s;
@@ -273,7 +273,7 @@ iso_connect(char *server, char *username, char *domain, char *password,
 
 	if (code != ISO_PDU_CC)
 	{
-		logger(Protocol, Error, "iso_connect(), expected ISO_PDU_CC, got 0x%x", code);
+		logger(RDP_Protocol, Error, "iso_connect(), expected ISO_PDU_CC, got 0x%x", code);
 		tcp_disconnect();
 		return False;
 	}
@@ -327,8 +327,8 @@ iso_connect(char *server, char *username, char *domain, char *password,
 			{
 				if (reason != NULL)
 				{
-					logger(Protocol, Warning,
-					       "Protocol negotiation failed with reason: %s",
+					logger(RDP_Protocol, Warning,
+					       "RDP_Protocol negotiation failed with reason: %s",
 					       reason);
 				}
 
@@ -344,7 +344,7 @@ iso_connect(char *server, char *username, char *domain, char *password,
 		if (type != RDP_NEG_RSP)
 		{
 			tcp_disconnect();
-			logger(Protocol, Error, "iso_connect(), expected RDP_NEG_RSP, got 0x%x",
+			logger(RDP_Protocol, Error, "iso_connect(), expected RDP_NEG_RSP, got 0x%x",
 			       type);
 			return False;
 		}
@@ -390,7 +390,7 @@ iso_connect(char *server, char *username, char *domain, char *password,
 		else if (data != PROTOCOL_RDP)
 		{
 			tcp_disconnect();
-			logger(Protocol, Error,
+			logger(RDP_Protocol, Error,
 			       "iso_connect(), unexpected protocol in negotiation response, got 0x%x",
 			       data);
 			return False;

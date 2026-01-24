@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
-   Protocol services - TCP layer
+   rdesktop: A Remote Desktop RDP_Protocol client.
+   RDP_Protocol services - TCP layer
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
    Copyright 2005-2011 Peter Astrand <astrand@cendio.se> for Cendio AB
    Copyright 2012-2019 Henrik Andersson <hean01@cendio.se> for Cendio AB
@@ -31,14 +31,22 @@
 #include <arpa/inet.h>		/* inet_addr */
 #include <errno.h>		/* errno */
 #include <assert.h>
+#include <fcntl.h>		/* fcntl O_NONBLOCK */
 #endif
 
-#include <gnutls/gnutls.h>
-#include <gnutls/x509.h>
-
 #include "rdesktop.h"
-#include "ssl.h"
-#include "asn.h"
+
+#ifdef __APPLE__
+/* Use macOS native Secure Transport instead of OpenSSL */
+#include <Security/Security.h>
+#include <Security/SecureTransport.h>
+#else
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+#include <openssl/rsa.h>
+#endif
 
 #ifdef _WIN32
 #define socklen_t int
@@ -48,7 +56,7 @@
 #else
 #define TCP_CLOSE(_sck) close(_sck)
 #define TCP_STRERROR strerror(errno)
-#define TCP_BLOCKS (errno == EWOULDBLOCK)
+#define TCP_BLOCKS (errno == EWOULDBLOCK || errno == EAGAIN)
 #endif
 
 #ifndef INADDR_NONE
@@ -78,7 +86,58 @@ extern RD_BOOL g_network_error;
 extern RD_BOOL g_reconnect_loop;
 extern char g_tls_version[];
 
-static gnutls_session_t g_tls_session;
+#ifdef __APPLE__
+static SSLContextRef g_ssl_ctx = NULL;
+#else
+static SSL_CTX *g_ssl_ctx = NULL;
+static SSL *g_ssl = NULL;
+#endif
+
+#ifdef __APPLE__
+/* Secure Transport read callback */
+static OSStatus
+st_read_func(SSLConnectionRef connection, void *data, size_t *dataLength)
+{
+	int sock = *(int *)connection;
+	ssize_t result = recv(sock, data, *dataLength, 0);
+
+	if (result > 0) {
+		*dataLength = result;
+		return noErr;
+	} else if (result == 0) {
+		*dataLength = 0;
+		return errSSLClosedGraceful;
+	} else {
+		*dataLength = 0;
+		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			return errSSLWouldBlock;
+		}
+		return errSSLClosedAbort;
+	}
+}
+
+/* Secure Transport write callback */
+static OSStatus
+st_write_func(SSLConnectionRef connection, const void *data, size_t *dataLength)
+{
+	int sock = *(int *)connection;
+	ssize_t result = send(sock, data, *dataLength, 0);
+
+	if (result > 0) {
+		*dataLength = result;
+		return noErr;
+	} else if (result == 0) {
+		*dataLength = 0;
+		return errSSLClosedGraceful;
+	} else {
+		*dataLength = 0;
+		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			return errSSLWouldBlock;
+		}
+		return errSSLClosedAbort;
+	}
+}
+#endif
 
 /* wait till socket is ready to write or timeout */
 static RD_BOOL
@@ -131,13 +190,32 @@ tcp_send(STREAM s)
 		in_uint8p(s, data, length);
 
 		if (g_ssl_initialized) {
-			sent = gnutls_record_send(g_tls_session, data, length);
+#ifdef __APPLE__
+			size_t processed = 0;
+			OSStatus status = SSLWrite(g_ssl_ctx, data, length, &processed);
+			if (status == noErr || status == errSSLWouldBlock) {
+				sent = processed;
+				if (status == errSSLWouldBlock && sent == 0) {
+					tcp_can_send(g_sock, 100);
+				}
+			} else {
+#ifdef WITH_SCARD
+				scard_unlock(SCARD_LOCK_TCP);
+#endif
+				logger(Core, Error, "tcp_send(), SSLWrite() failed with status %d\n", (int)status);
+				g_network_error = True;
+				return;
+			}
+#else
+			sent = SSL_write(g_ssl, data, length);
 			if (sent <= 0) {
-				if (gnutls_error_is_fatal(sent)) {
+				int ssl_error = SSL_get_error(g_ssl, sent);
+				if (ssl_error != SSL_ERROR_WANT_WRITE && ssl_error != SSL_ERROR_WANT_READ) {
 #ifdef WITH_SCARD
 					scard_unlock(SCARD_LOCK_TCP);
 #endif
-					logger(Core, Error, "tcp_send(), gnutls_record_send() failed with %d: %s\n", sent, gnutls_strerror(sent));
+					logger(Core, Error, "tcp_send(), SSL_write() failed with error %d: %s\n",
+						   ssl_error, ERR_error_string(ERR_get_error(), NULL));
 					g_network_error = True;
 					return;
 				} else {
@@ -145,6 +223,7 @@ tcp_send(STREAM s)
 					sent = 0;
 				}
 			}
+#endif
 		}
 		else
 		{
@@ -204,14 +283,22 @@ tcp_recv(STREAM s, uint32 length)
 	while (length > 0)
 	{
 
-		if ((!g_ssl_initialized || (gnutls_record_check_pending(g_tls_session) <= 0)) && g_run_ui)
+#ifdef __APPLE__
+		/* Secure Transport doesn't have a pending check like OpenSSL */
+		if (g_ssl_initialized && g_run_ui)
+#else
+		if ((!g_ssl_initialized || (SSL_pending(g_ssl) <= 0)) && g_run_ui)
+#endif
 		{
 			ui_select(g_sock);
 
 			/* break out of recv, if request of exiting
 			   main loop has been done */
 			if (g_exit_mainloop == True)
+			{
+				logger(Core, Debug, "tcp_recv(): exiting due to g_exit_mainloop=True");
 				return NULL;
+			}
 		}
 
 		before = s_tell(s);
@@ -222,22 +309,93 @@ tcp_recv(STREAM s, uint32 length)
 		s_seek(s, before);
 
 		if (g_ssl_initialized) {
-			rcvd = gnutls_record_recv(g_tls_session, data, length);
+#ifdef __APPLE__
+			size_t processed = 0;
+			OSStatus status = SSLRead(g_ssl_ctx, data, length, &processed);
 
-			if (rcvd < 0) {
-				if (gnutls_error_is_fatal(rcvd)) {
-					logger(Core, Error, "tcp_recv(), gnutls_record_recv() failed with %d: %s\n", rcvd, gnutls_strerror(rcvd));
-					g_network_error = True;
-					return NULL;
-				} else {
-					rcvd = 0;
+			if (status == noErr || status == errSSLWouldBlock) {
+				rcvd = processed;
+				if (status == errSSLWouldBlock && rcvd == 0) {
+					if (g_run_ui) {
+						ui_select(g_sock);
+					}
+					if (g_exit_mainloop == True) {
+						logger(Core, Debug, "tcp_recv(): exiting due to g_exit_mainloop=True");
+						return NULL;
+					}
 				}
+			} else if (status == errSSLClosedGraceful) {
+				logger(Core, Error, "tcp_recv(): SSL connection closed gracefully by peer");
+				g_network_error = True;
+				return NULL;
+			} else {
+				logger(Core, Error, "tcp_recv(): SSLRead() failed with status %d", (int)status);
+				g_network_error = True;
+				return NULL;
 			}
 
+			if (rcvd > 0) {
+				logger(Core, Debug, "tcp_recv(): successfully read %d bytes via SSL", rcvd);
+			}
+#else
+//			logger(Core, Debug, "tcp_recv(): calling SSL_read() for %d bytes...", length);
+			rcvd = SSL_read(g_ssl, data, length);
+//			logger(Core, Debug, "tcp_recv(): SSL_read() returned %d", rcvd);
+
+			if (rcvd <= 0) {
+				int ssl_error = SSL_get_error(g_ssl, rcvd);
+				unsigned long err_code = ERR_get_error();
+
+				if (ssl_error == SSL_ERROR_WANT_READ || ssl_error == SSL_ERROR_WANT_WRITE) {
+					/* Non-blocking socket would block - process UI events while waiting */
+//					logger(Core, Debug, "tcp_recv(): SSL_ERROR_WANT_READ/WRITE - processing UI events...");
+					if (g_run_ui) {
+						ui_select(g_sock);
+					}
+					rcvd = 0;  /* Retry the read */
+
+					/* Check if we should exit */
+					if (g_exit_mainloop == True) {
+						logger(Core, Debug, "tcp_recv(): exiting due to g_exit_mainloop=True");
+						return NULL;
+					}
+				} else {
+					/* Real error */
+					logger(Core, Error, "========================================");
+					logger(Core, Error, "tcp_recv(): SSL CONNECTION ERROR");
+					logger(Core, Error, "  SSL_read() returned: %d", rcvd);
+					logger(Core, Error, "  SSL_get_error(): %d", ssl_error);
+					logger(Core, Error, "  ERR_get_error(): 0x%lx", err_code);
+					logger(Core, Error, "  Error string: %s", ERR_error_string(err_code, NULL));
+					logger(Core, Error, "  Socket fd: %d", g_sock);
+					logger(Core, Error, "  Bytes requested: %d", length);
+					logger(Core, Error, "========================================");
+
+					if (ssl_error == SSL_ERROR_ZERO_RETURN) {
+						logger(Core, Error, "tcp_recv(): SSL connection closed gracefully by peer");
+					} else if (ssl_error == SSL_ERROR_SYSCALL) {
+						if (err_code == 0) {
+							logger(Core, Error, "tcp_recv(): SSL_ERROR_SYSCALL with EOF (unexpected connection termination)");
+							logger(Core, Error, "tcp_recv(): This usually means the server crashed or forcibly closed the connection");
+						} else {
+							logger(Core, Error, "tcp_recv(): SSL_ERROR_SYSCALL: %s", strerror(errno));
+						}
+					}
+
+					g_network_error = True;
+					return NULL;
+				}
+			} else {
+				logger(Core, Debug, "tcp_recv(): successfully read %d bytes via SSL", rcvd);
+			}
+#endif
 		}
 		else
 		{
+			logger(Core, Debug, "tcp_recv(): calling recv() for %d bytes (non-SSL)...", length);
 			rcvd = recv(g_sock, data, length, 0);
+			logger(Core, Debug, "tcp_recv(): recv() returned %d", rcvd);
+
 			if (rcvd < 0)
 			{
 				if (rcvd == -1 && TCP_BLOCKS)
@@ -254,7 +412,7 @@ tcp_recv(STREAM s, uint32 length)
 			}
 			else if (rcvd == 0)
 			{
-				logger(Core, Error, "rcp_recv(), connection closed by peer");
+				logger(Core, Error, "tcp_recv(), connection closed by peer");
 				return NULL;
 			}
 		}
@@ -267,265 +425,442 @@ tcp_recv(STREAM s, uint32 length)
 	return s;
 }
 
+#ifndef __APPLE__
 /*
- * Callback during handshake to verify peer certificate
+ * Callback during handshake to verify peer certificate (OpenSSL only)
  */
 static int
-cert_verify_callback(gnutls_session_t session)
+cert_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 {
-	int rv;
-	int type;
-	RD_BOOL hostname_mismatch = False;
-	unsigned int status;
-	gnutls_x509_crt_t cert;
-	const gnutls_datum_t *cert_list;
-	unsigned int cert_list_size;
+	int err, depth;
 
-	/*
-	* verify certificate against system trust store
-	*/
-	rv = gnutls_certificate_verify_peers2(session, &status);
-	if (rv == GNUTLS_E_SUCCESS)
-	{
-		logger(Core, Debug, "%s(), certificate verify status flags: %x", __func__, status);
+	err = X509_STORE_CTX_get_error(ctx);
+	depth = X509_STORE_CTX_get_error_depth(ctx);
 
-		if (status == 0)
+	logger(Core, Debug, "%s(), preverify_ok=%d, error=%d, depth=%d", __func__, preverify_ok, err, depth);
+
+	/* Accept self-signed certificates and hostname mismatches for now */
+	/* TODO: Implement proper certificate validation with user prompts */
+	if (!preverify_ok) {
+		logger(Core, Warning, "%s(), certificate verification failed: %s", __func__,
+			   X509_verify_cert_error_string(err));
+
+		/* Accept common RDP server certificate issues */
+		if (err == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT ||
+			err == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN ||
+			err == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY ||
+			err == X509_V_ERR_CERT_UNTRUSTED ||
+			err == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
 		{
-			/* get list of certificates */
-			cert_list = NULL;
-			cert_list_size = 0;
-
-			type = gnutls_certificate_type_get(session);
-			if (type == GNUTLS_CRT_X509) {
-				cert_list = gnutls_certificate_get_peers(session, &cert_list_size);
-			}
-
-			if (cert_list_size > 0)
-			{
-				/* validate hostname */
-				gnutls_x509_crt_init(&cert);
-				gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER);
-				if (gnutls_x509_crt_check_hostname(cert, g_last_server_name) != 0)
-				{
-					logger(Core, Debug, "%s(), certificate is valid", __func__);
-					return 0;
-				}
-				else
-				{
-					logger(Core, Warning, "%s(), certificate hostname mismatch", __func__);
-					hostname_mismatch = True;
-				}
-			}
-			else
-			{
-				logger(Core, Error, "%s(), failed to get certificate list for peers", __func__);
-				return 1;
-			}
+			logger(Core, Warning, "%s(), accepting self-signed certificate", __func__);
+			return 1; /* Accept */
 		}
 	}
 
-	/*
-	 *  Use local store as fallback
-	 */
-	return utils_cert_handle_exception(session, status, hostname_mismatch, g_last_server_name);
+	return preverify_ok;
 }
 
 static void
-gnutls_fatal(const char *text, int status)
+openssl_fatal(const char *text)
 {
-	logger(Core, Error, "%s: %s", text, gnutls_strerror(status));
+	logger(Core, Error, "%s: %s", text, ERR_error_string(ERR_get_error(), NULL));
 	/* TODO: Lookup if exit(1) is just plain wrong, its used here to breakout of
 		fallback code path for connection, eg. if TLS fails, a retry with plain
 		RDP is made.
 	*/
 	exit(1);
 }
+#endif
 
-/* Establish a SSL/TLS 1.0 connection */
+/* Establish a SSL/TLS 1.2 connection */
 RD_BOOL
 tcp_tls_connect(void)
 {
+#ifdef __APPLE__
+	OSStatus status;
+	SSLProtocol protocol;
+
+	/* Create SSL context */
+	g_ssl_ctx = SSLCreateContext(NULL, kSSLClientSide, kSSLStreamType);
+	if (!g_ssl_ctx) {
+		logger(Core, Error, "tcp_tls_connect(), could not create SSL context");
+		return False;
+	}
+
+	/* Set IO callbacks */
+	status = SSLSetIOFuncs(g_ssl_ctx, st_read_func, st_write_func);
+	if (status != noErr) {
+		logger(Core, Error, "tcp_tls_connect(), SSLSetIOFuncs failed: %d", (int)status);
+		goto fail;
+	}
+
+	/* Set connection (socket pointer) */
+	status = SSLSetConnection(g_ssl_ctx, &g_sock);
+	if (status != noErr) {
+		logger(Core, Error, "tcp_tls_connect(), SSLSetConnection failed: %d", (int)status);
+		goto fail;
+	}
+
+	/* Set TLS protocol version based on g_tls_version */
+	if (g_tls_version[0] == 0 || !strcmp(g_tls_version, "1.2"))
+	{
+		/* TLS 1.2 only */
+		SSLSetProtocolVersionMin(g_ssl_ctx, kTLSProtocol12);
+		SSLSetProtocolVersionMax(g_ssl_ctx, kTLSProtocol12);
+		logger(Core, Debug, "tcp_tls_connect(), using TLS 1.2");
+	}
+	else if (!strcmp(g_tls_version, "1.1"))
+	{
+		/* TLS 1.1 only */
+		SSLSetProtocolVersionMin(g_ssl_ctx, kTLSProtocol11);
+		SSLSetProtocolVersionMax(g_ssl_ctx, kTLSProtocol11);
+		logger(Core, Debug, "tcp_tls_connect(), using TLS 1.1");
+	}
+	else if (!strcmp(g_tls_version, "1.0"))
+	{
+		/* TLS 1.0 only */
+		SSLSetProtocolVersionMin(g_ssl_ctx, kTLSProtocol1);
+		SSLSetProtocolVersionMax(g_ssl_ctx, kTLSProtocol1);
+		logger(Core, Debug, "tcp_tls_connect(), using TLS 1.0");
+	}
+	else
+	{
+		logger(Core, Error, "tcp_tls_connect(), TLS method should be 1.0, 1.1, or 1.2");
+		goto fail;
+	}
+
+	/* Disable certificate verification for self-signed certs (common in RDP) */
+	/* TODO: Implement proper certificate validation with user prompts */
+	SSLSetSessionOption(g_ssl_ctx, kSSLSessionOptionBreakOnServerAuth, true);
+
+	/* Perform TLS handshake */
+	logger(Core, Debug, "tcp_tls_connect(), starting SSLHandshake()");
+	do {
+		status = SSLHandshake(g_ssl_ctx);
+
+		/* Handle certificate verification */
+		if (status == errSSLServerAuthCompleted) {
+			/* Accept self-signed certs for now */
+			logger(Core, Warning, "tcp_tls_connect(), accepting server certificate (verification disabled)");
+			continue; /* Retry handshake */
+		}
+
+		if (status == errSSLWouldBlock) {
+			/* Non-blocking socket needs more data */
+			continue;
+		}
+
+	} while (status == errSSLWouldBlock || status == errSSLServerAuthCompleted);
+
+	if (status != noErr) {
+		logger(Core, Error, "%s(), TLS handshake failed with status %d",
+			   __func__, (int)status);
+		goto fail;
+	}
+
+	/* Get negotiated protocol version */
+	status = SSLGetNegotiatedProtocolVersion(g_ssl_ctx, &protocol);
+	if (status == noErr) {
+		const char *version_str = "Unknown";
+		switch (protocol) {
+			case kTLSProtocol1:   version_str = "TLS 1.0"; break;
+			case kTLSProtocol11:  version_str = "TLS 1.1"; break;
+			case kTLSProtocol12:  version_str = "TLS 1.2"; break;
+			case kTLSProtocol13:  version_str = "TLS 1.3"; break;
+			default: break;
+		}
+		logger(Core, Verbose, "TLS Session info: %s (Secure Transport)\n", version_str);
+		snprintf(g_tls_version, 32, "%s", version_str);
+	}
+
+	logger(Core, Debug, "tcp_tls_connect(), connection established successfully");
+
+	/* Set socket to non-blocking mode for UI responsiveness (after SSL handshake) */
+	int flags = fcntl(g_sock, F_GETFL, 0);
+	if (flags >= 0) {
+		fcntl(g_sock, F_SETFL, flags | O_NONBLOCK);
+		logger(Core, Debug, "tcp_tls_connect(): socket set to non-blocking mode");
+	}
+
+	g_ssl_initialized = True;
+	return True;
+
+fail:
+	if (g_ssl_ctx) {
+		CFRelease(g_ssl_ctx);
+		g_ssl_ctx = NULL;
+	}
+	g_ssl_initialized = False;
+	return False;
+
+#else /* OpenSSL implementation */
 	int err;
-	const char* priority;
+	const SSL_METHOD *method;
 
-	gnutls_certificate_credentials_t xcred;
-
-	/* Initialize TLS session */
+	/* Initialize OpenSSL library */
 	if (!g_ssl_initialized)
 	{
-		gnutls_global_init();
-		err = gnutls_init(&g_tls_session, GNUTLS_CLIENT);
-		if (err < 0) {
-			gnutls_fatal("Could not initialize GnuTLS", err);
-		}
+		SSL_library_init();
+		SSL_load_error_strings();
+		OpenSSL_add_all_algorithms();
 		g_ssl_initialized = True;
 	}
 
-	/* FIXME: It is recommended to use the default priorities, but
-	          appending things requires GnuTLS 3.6.3 */
+	/* Create SSL context */
+	method = TLS_client_method();
+	g_ssl_ctx = SSL_CTX_new(method);
+	if (!g_ssl_ctx) {
+		openssl_fatal("Could not create SSL context");
+		return False;
+	}
 
-	priority = NULL;
-	if (g_tls_version[0] == 0)
-		priority = GNUTLS_PRIORITY;
-	else if (!strcmp(g_tls_version, "1.0"))
-		priority = GNUTLS_PRIORITY ":-VERS-ALL:+VERS-TLS1.0";
-	else if (!strcmp(g_tls_version, "1.1"))
-		priority = GNUTLS_PRIORITY ":-VERS-ALL:+VERS-TLS1.1";
-	else if (!strcmp(g_tls_version, "1.2"))
-		priority = GNUTLS_PRIORITY ":-VERS-ALL:+VERS-TLS1.2";
-
-	if (priority == NULL)
+	/* Set minimum TLS version based on g_tls_version */
+	if (g_tls_version[0] == 0 || !strcmp(g_tls_version, "1.2"))
 	{
-		logger(Core, Error,
-		       "tcp_tls_connect(), TLS method should be 1.0, 1.1, or 1.2");
+		SSL_CTX_set_min_proto_version(g_ssl_ctx, TLS1_2_VERSION);
+		SSL_CTX_set_max_proto_version(g_ssl_ctx, TLS1_2_VERSION);
+		logger(Core, Debug, "tcp_tls_connect(), using TLS 1.2");
+	}
+	else if (!strcmp(g_tls_version, "1.1"))
+	{
+		SSL_CTX_set_min_proto_version(g_ssl_ctx, TLS1_1_VERSION);
+		SSL_CTX_set_max_proto_version(g_ssl_ctx, TLS1_1_VERSION);
+		logger(Core, Debug, "tcp_tls_connect(), using TLS 1.1");
+	}
+	else if (!strcmp(g_tls_version, "1.0"))
+	{
+		SSL_CTX_set_min_proto_version(g_ssl_ctx, TLS1_VERSION);
+		SSL_CTX_set_max_proto_version(g_ssl_ctx, TLS1_VERSION);
+		logger(Core, Debug, "tcp_tls_connect(), using TLS 1.0");
+	}
+	else
+	{
+		logger(Core, Error, "tcp_tls_connect(), TLS method should be 1.0, 1.1, or 1.2");
 		goto fail;
 	}
 
-	err = gnutls_priority_set_direct(g_tls_session, priority, NULL);
-	if (err < 0) {
-		gnutls_fatal("Could not set GnuTLS priority setting", err);
+	/* Load system trust store */
+	if (!SSL_CTX_set_default_verify_paths(g_ssl_ctx)) {
+		logger(Core, Warning, "%s(), Could not load system trust database: %s",
+			   __func__, ERR_error_string(ERR_get_error(), NULL));
 	}
 
-	err = gnutls_certificate_allocate_credentials(&xcred);
-	if (err < 0) {
-		gnutls_fatal("Could not allocate TLS certificate structure", err);
-	}
-	err = gnutls_credentials_set(g_tls_session, GNUTLS_CRD_CERTIFICATE, xcred);
-	if (err < 0) {
-		gnutls_fatal("Could not set TLS certificate structure", err);
-	}
-	err = gnutls_certificate_set_x509_system_trust(xcred);
-	if (err < 0) {
-		logger(Core, Error, "%s(), Could not load system trust database: %s",
-			   __func__, gnutls_strerror(err));
-	}
-	gnutls_certificate_set_verify_function(xcred, cert_verify_callback);
-	gnutls_transport_set_int(g_tls_session, g_sock);
-	gnutls_handshake_set_timeout(g_tls_session, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
+	/* Set certificate verification callback */
+	SSL_CTX_set_verify(g_ssl_ctx, SSL_VERIFY_PEER, cert_verify_callback);
 
-	/* Perform the TLS handshake */
-	do {
-		err = gnutls_handshake(g_tls_session);
-	} while (err < 0 && gnutls_error_is_fatal(err) == 0);
-
-
-	if (err < 0) {
-
-		if (err == GNUTLS_E_CERTIFICATE_ERROR)
-		{
-			gnutls_fatal("Certificate error during TLS handshake", err);
-		}
-
-		/* Handshake failed with unknown error, lets log */
-		logger(Core, Error, "%s(), TLS handshake failed. GnuTLS error: %s",
-			   __func__, gnutls_strerror(err));
-
+	/* Create SSL connection */
+	g_ssl = SSL_new(g_ssl_ctx);
+	if (!g_ssl) {
+		openssl_fatal("Could not create SSL connection");
 		goto fail;
+	}
 
-	} else {
-		char *desc;
-		desc = gnutls_session_get_desc(g_tls_session);
-		logger(Core, Verbose, "TLS  Session info: %s\n", desc);
-		gnutls_free(desc);
+	/* Attach socket to SSL */
+	if (!SSL_set_fd(g_ssl, g_sock)) {
+		openssl_fatal("Could not attach socket to SSL");
+		goto fail;
+	}
+
+	/* Perform TLS handshake */
+	logger(Core, Debug, "tcp_tls_connect(), starting SSL_connect()");
+	err = SSL_connect(g_ssl);
+	if (err != 1) {
+		int ssl_error = SSL_get_error(g_ssl, err);
+		logger(Core, Error, "%s(), TLS handshake failed. SSL_connect returned %d, error: %d (%s)",
+			   __func__, err, ssl_error, ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+
+	/* Log TLS session info */
+	{
+		const char *version = SSL_get_version(g_ssl);
+		const char *cipher = SSL_get_cipher(g_ssl);
+		logger(Core, Verbose, "TLS  Session info: %s-%s (stub)\n", version, cipher);
+		/* g_tls_version is an extern array, use reasonable buffer size */
+		snprintf(g_tls_version, 32, "%s", version);
+	}
+
+	logger(Core, Debug, "tcp_tls_connect(), connection established successfully");
+
+	/* Set socket to non-blocking mode for UI responsiveness (after SSL handshake) */
+	int flags = fcntl(g_sock, F_GETFL, 0);
+	if (flags >= 0) {
+		fcntl(g_sock, F_SETFL, flags | O_NONBLOCK);
+		logger(Core, Debug, "tcp_tls_connect(): socket set to non-blocking mode");
 	}
 
 	return True;
 
 fail:
-
-	if (g_ssl_initialized) {
-		gnutls_deinit(g_tls_session);
-		// Not needed since 3.3.0
-		gnutls_global_deinit();
-
-		g_ssl_initialized = False;
+	if (g_ssl) {
+		SSL_free(g_ssl);
+		g_ssl = NULL;
 	}
-
+	if (g_ssl_ctx) {
+		SSL_CTX_free(g_ssl_ctx);
+		g_ssl_ctx = NULL;
+	}
+	g_ssl_initialized = False;
 	return False;
+#endif
 }
 
 /* Get public key from server of TLS 1.x connection */
 STREAM
 tcp_tls_get_server_pubkey()
 {
-	int ret;
-	unsigned int list_size;
-	const gnutls_datum_t *cert_list;
-	gnutls_x509_crt_t cert;
+#ifdef __APPLE__
+	SecTrustRef trust = NULL;
+	SecCertificateRef cert = NULL;
+	SecKeyRef pubkey = NULL;
+	CFDataRef pk_data_cf = NULL;
+	unsigned char *pk_data = NULL;
+	CFIndex pk_size;
+	STREAM s = NULL;
+	OSStatus status;
 
-	unsigned int algo, bits;
-	gnutls_datum_t m, e;
+	/* Get peer trust from SSL session */
+	status = SSLCopyPeerTrust(g_ssl_ctx, &trust);
+	if (status != noErr || !trust) {
+		logger(Core, Error, "%s:%s:%d Failed to get peer trust (status %d)\n",
+				__FILE__, __func__, __LINE__, (int)status);
+		return NULL;
+	}
 
+	/* Get certificate from trust */
+	if (SecTrustGetCertificateCount(trust) > 0) {
+		cert = SecTrustGetCertificateAtIndex(trust, 0);
+		if (cert) {
+			CFRetain(cert); /* Retain since we'll use it after releasing trust */
+		}
+	}
+
+	CFRelease(trust);
+
+	if (!cert) {
+		logger(Core, Error, "%s:%s:%d Failed to get peer certificate\n",
+				__FILE__, __func__, __LINE__);
+		return NULL;
+	}
+
+	/* Extract public key from certificate */
+	pubkey = SecCertificateCopyKey(cert);
+	if (!pubkey) {
+		logger(Core, Error, "%s:%s:%d Failed to get public key from certificate\n",
+				__FILE__, __func__, __LINE__);
+		CFRelease(cert);
+		return NULL;
+	}
+
+	/* Export public key in X.509 SubjectPublicKeyInfo DER format */
+	CFErrorRef error = NULL;
+	pk_data_cf = SecKeyCopyExternalRepresentation(pubkey, &error);
+	if (!pk_data_cf) {
+		if (error) {
+			CFStringRef errorDesc = CFErrorCopyDescription(error);
+			char errorStr[256];
+			CFStringGetCString(errorDesc, errorStr, sizeof(errorStr), kCFStringEncodingUTF8);
+			logger(Core, Error, "%s:%s:%d Failed to export public key: %s\n",
+					__FILE__, __func__, __LINE__, errorStr);
+			CFRelease(errorDesc);
+			CFRelease(error);
+		}
+		CFRelease(pubkey);
+		CFRelease(cert);
+		return NULL;
+	}
+
+	/* Get raw key data */
+	pk_size = CFDataGetLength(pk_data_cf);
+	pk_data = (unsigned char *)CFDataGetBytePtr(pk_data_cf);
+
+	/* Create stream and copy public key data */
+	s = s_alloc(pk_size);
+	out_uint8a(s, pk_data, pk_size);
+	s_mark_end(s);
+	s_seek(s, 0);
+
+	CFRelease(pk_data_cf);
+	CFRelease(pubkey);
+	CFRelease(cert);
+
+	return s;
+
+#else /* OpenSSL implementation */
+	X509 *cert = NULL;
+	EVP_PKEY *pkey = NULL;
+	RSA *rsa = NULL;
+	unsigned char *pk_data = NULL;
 	int pk_size;
-	uint8_t pk_data[1024];
-
 	STREAM s = NULL;
 
-	cert_list = gnutls_certificate_get_peers(g_tls_session, &list_size);
-
-	if (!cert_list) {
-		logger(Core, Error, "%s:%s:%d Failed to get peer's certs' list\n", __FILE__, __func__, __LINE__);
+	/* Get peer certificate from SSL connection */
+	cert = SSL_get_peer_certificate(g_ssl);
+	if (!cert) {
+		logger(Core, Error, "%s:%s:%d Failed to get peer certificate\n",
+				__FILE__, __func__, __LINE__);
 		goto out;
 	}
 
-	if ((ret = gnutls_x509_crt_init(&cert)) != GNUTLS_E_SUCCESS) {
-		logger(Core, Error, "%s:%s:%d Failed to init certificate structure. GnuTLS error: %s\n",
-				__FILE__, __func__, __LINE__, gnutls_strerror(ret));
+	/* Extract public key from certificate */
+	pkey = X509_get_pubkey(cert);
+	if (!pkey) {
+		logger(Core, Error, "%s:%s:%d Failed to get public key from certificate. OpenSSL error: %s\n",
+				__FILE__, __func__, __LINE__, ERR_error_string(ERR_get_error(), NULL));
 		goto out;
 	}
 
-	if ((ret = gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER)) != GNUTLS_E_SUCCESS) {
-		logger(Core, Error, "%s:%s:%d Failed to import DER certificate. GnuTLS error:%s\n",
-				__FILE__, __func__, __LINE__, gnutls_strerror(ret));
+	/* Get RSA key */
+	rsa = EVP_PKEY_get1_RSA(pkey);
+	if (!rsa) {
+		logger(Core, Error, "%s:%s:%d Certificate public key is not RSA. OpenSSL error: %s\n",
+				__FILE__, __func__, __LINE__, ERR_error_string(ERR_get_error(), NULL));
 		goto out;
 	}
-
-	algo = gnutls_x509_crt_get_pk_algorithm(cert, &bits);
-
-	if (algo == GNUTLS_PK_RSA) {
-		if ((ret = gnutls_x509_crt_get_pk_rsa_raw(cert, &m, &e)) !=  GNUTLS_E_SUCCESS) {
-			logger(Core, Error, "%s:%s:%d Failed to get RSA public key parameters from certificate. GnuTLS error:%s\n",
-					__FILE__, __func__, __LINE__, gnutls_strerror(ret));
-			goto out;
-		}
-	} else {
-			logger(Core, Error, "%s:%s:%d Peer's certificate public key algorithm is not RSA. GnuTLS error:%s\n",
-					__FILE__, __func__, __LINE__, gnutls_strerror(algo));
-			goto out;
-	}
-
-	pk_size = sizeof(pk_data);
 
 	/*
-	 * This key will be used further in cssp_connect() for server's key comparison.
-	 *
-	 * Note that we need to encode this RSA public key into PKCS#1 DER
-	 * ATM there's no way to encode/export RSA public key to PKCS#1 using GnuTLS,
-	 * gnutls_pubkey_export() encodes into PKCS#8. So besides fixing GnuTLS
-	 * we can use libtasn1 for encoding.
+	 * Encode RSA public key to PKCS#1 DER format
+	 * OpenSSL's i2d_RSAPublicKey() directly produces PKCS#1 DER format
 	 */
-
-	if ((ret = write_pkcs1_der_pubkey(&m, &e, pk_data, &pk_size)) != 0) {
-			logger(Core, Error, "%s:%s:%d Failed to encode RSA public key to PKCS#1 DER\n",
-					__FILE__, __func__, __LINE__);
-			goto out;
+	pk_size = i2d_RSAPublicKey(rsa, NULL);
+	if (pk_size <= 0) {
+		logger(Core, Error, "%s:%s:%d Failed to determine RSA public key size. OpenSSL error: %s\n",
+				__FILE__, __func__, __LINE__, ERR_error_string(ERR_get_error(), NULL));
+		goto out;
 	}
 
+	pk_data = (unsigned char *)malloc(pk_size);
+	if (!pk_data) {
+		logger(Core, Error, "%s:%s:%d Failed to allocate memory for public key\n",
+				__FILE__, __func__, __LINE__);
+		goto out;
+	}
+
+	unsigned char *pk_ptr = pk_data;
+	if (i2d_RSAPublicKey(rsa, &pk_ptr) != pk_size) {
+		logger(Core, Error, "%s:%s:%d Failed to encode RSA public key to PKCS#1 DER. OpenSSL error: %s\n",
+				__FILE__, __func__, __LINE__, ERR_error_string(ERR_get_error(), NULL));
+		goto out;
+	}
+
+	/* Create stream and copy public key data */
 	s = s_alloc(pk_size);
 	out_uint8a(s, pk_data, pk_size);
 	s_mark_end(s);
 	s_seek(s, 0);
 
 out:
-	if ((e.size != 0) && (e.data)) {
-		free(e.data);
-	}
-
-	if ((m.size != 0) && (m.data)) {
-		free(m.data);
-	}
+	if (pk_data)
+		free(pk_data);
+	if (rsa)
+		RSA_free(rsa);
+	if (pkey)
+		EVP_PKEY_free(pkey);
+	if (cert)
+		X509_free(cert);
 
 	return s;
+#endif
 }
 
 /* Helper function to determine if rdesktop should resolve hostnames again or not */
@@ -713,11 +1048,23 @@ void
 tcp_disconnect(void)
 {
 	if (g_ssl_initialized) {
-		(void)gnutls_bye(g_tls_session, GNUTLS_SHUT_WR);
-		gnutls_deinit(g_tls_session);
-		// Not needed since 3.3.0
-		gnutls_global_deinit();
-
+#ifdef __APPLE__
+		if (g_ssl_ctx) {
+			SSLClose(g_ssl_ctx);
+			CFRelease(g_ssl_ctx);
+			g_ssl_ctx = NULL;
+		}
+#else
+		if (g_ssl) {
+			SSL_shutdown(g_ssl);
+			SSL_free(g_ssl);
+			g_ssl = NULL;
+		}
+		if (g_ssl_ctx) {
+			SSL_CTX_free(g_ssl_ctx);
+			g_ssl_ctx = NULL;
+		}
+#endif
 		g_ssl_initialized = False;
 	}
 

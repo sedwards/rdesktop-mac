@@ -16,33 +16,33 @@ KEYMAP_PATH = $(datadir)/rdesktop/keymaps/
 
 CC          = @CC@
 INSTALL     = @INSTALL@
-CFLAGS      = @CFLAGS@ @X_CFLAGS@ @DEFS@ -DKEYMAP_PATH=\"$(KEYMAP_PATH)\"
-LDFLAGS     = @LDFLAGS@ @LIBS@ @X_LIBS@ @X_EXTRA_LIBS@
+CFLAGS      = @CFLAGS@ @DEFS@ -I/opt/homebrew/opt/gmp/include -DKEYMAP_PATH=\"$(KEYMAP_PATH)\"
+LDFLAGS     = @LDFLAGS@ @LIBS@ -L/opt/homebrew/opt/gmp/lib -lgmp
 STRIP       = @STRIP@
 
-TARGETS     = rdesktop
+TARGETS     = rdesktop-mac
 SOUNDOBJ    = @SOUNDOBJ@
 SCARDOBJ    = @SCARDOBJ@
 CREDSSPOBJ  = @CREDSSPOBJ@
 
-RDPOBJ   = tcp.o asn.o iso.o mcs.o secure.o licence.o rdp.o orders.o bitmap.o cache.o rdp5.o channels.o rdpdr.o serial.o printer.o disk.o parallel.o printercache.o mppc.o pstcache.o lspci.o seamless.o ssl.o utils.o stream.o dvc.o rdpedisp.o
-X11OBJ   = rdesktop.o xwin.o xkeymap.o ewmhints.o xclip.o cliprdr.o ctrl.o
+RDPOBJ   = tcp.o asn.o iso.o mcs.o secure.o licence.o orders.o bitmap.o cache.o rdp5.o channels.o rdpdr.o serial.o printer.o disk.o parallel.o printercache.o mppc.o pstcache.o lspci.o seamless.o macssl.o utils.o stream.o dvc.o rdpedisp.o
+MACOBJ   = mac_gui_main.o rdesktop_main.o rdp.o macwin.o mackeymap.o macclip.o MacRDPConnectionGUI.o cliprdr.o ctrl.o
 
 .PHONY: all
 all: $(TARGETS)
 
-rdesktop: $(X11OBJ) $(SOUNDOBJ) $(RDPOBJ) $(SCARDOBJ) $(CREDSSPOBJ)
-	$(CC) $(CFLAGS) -o rdesktop $(X11OBJ) $(SOUNDOBJ) $(RDPOBJ) $(SCARDOBJ) $(CREDSSPOBJ) $(LDFLAGS) -lX11
+rdesktop-mac: $(MACOBJ) $(SOUNDOBJ) $(RDPOBJ) $(SCARDOBJ) $(CREDSSPOBJ)
+	$(CC) $(CFLAGS) -o rdesktop-mac $(MACOBJ) $(SOUNDOBJ) $(RDPOBJ) $(SCARDOBJ) $(CREDSSPOBJ) $(LDFLAGS) -framework Cocoa -framework CoreGraphics -framework Carbon -framework Security
 
 .PHONY: install
 install: installbin installkeymaps installman
 
 .PHONY: installbin
-installbin: rdesktop
+installbin: rdesktop-mac
 	mkdir -p $(DESTDIR)$(bindir)
-	$(INSTALL) rdesktop $(DESTDIR)$(bindir)
-	$(STRIP) $(DESTDIR)$(bindir)/rdesktop
-	chmod 755 $(DESTDIR)$(bindir)/rdesktop
+	$(INSTALL) rdesktop-mac $(DESTDIR)$(bindir)
+	$(STRIP) $(DESTDIR)$(bindir)/rdesktop-mac
+	chmod 755 $(DESTDIR)$(bindir)/rdesktop-mac
 
 .PHONY: installman
 installman: doc/rdesktop.1
@@ -61,7 +61,7 @@ installkeymaps:
 
 .PHONY: clean
 clean:
-	rm -f *.o *~ rdesktop
+	rm -f *.o *~ rdesktop-mac
 
 .PHONY: distclean
 distclean: clean
@@ -123,9 +123,12 @@ configure: configure.ac
 	./bootstrap
 
 .SUFFIXES:
-.SUFFIXES: .c .o
+.SUFFIXES: .c .o .m
 
 .c.o:
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+.m.o:
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 .PHONY: doc/AUTHORS

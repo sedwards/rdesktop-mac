@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    RDP order processing
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
 
@@ -1318,6 +1318,8 @@ process_orders(STREAM s, uint16 num_orders)
 	uint8 order_flags;
 	int size, processed = 0;
 	RD_BOOL delta;
+
+	logger(RDP_Protocol, Debug, "process_orders() called with num_orders=%d", num_orders);
 
 	while (processed < num_orders)
 	{

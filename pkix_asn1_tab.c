@@ -2,7 +2,7 @@
 # include "config.h"
 #endif
 
-#include <libtasn1.h>
+// Native macOS SSL compatibility - ASN.1 definitions in macssl.h
 
 const asn1_static_node pkix_asn1_tab[] = {
   { "PKIX1Implicit88", 536875024, NULL },

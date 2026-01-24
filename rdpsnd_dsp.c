@@ -1,5 +1,5 @@
 /*
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Sound DSP routines
    Copyright (C) Michael Gernoth <mike@zerfleddert.de> 2006-2008
    Copyright 2017 Henrik Andersson <hean01@cendio.se> for Cendio AB

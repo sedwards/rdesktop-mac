@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
 
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
 
@@ -723,18 +723,18 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 		case SERIAL_SET_BAUD_RATE:
 			in_uint32_le(in, pser_inf->baud_rate);
 			set_termios(pser_inf, handle);
-			logger(Protocol, Debug, "serial_device_control(), set baud rate %d",
+			logger(RDP_Protocol, Debug, "serial_device_control(), set baud rate %d",
 			       pser_inf->baud_rate);
 			break;
 		case SERIAL_GET_BAUD_RATE:
 			out_uint32_le(out, pser_inf->baud_rate);
-			logger(Protocol, Debug, "serial_device_control(), get baud rate %d",
+			logger(RDP_Protocol, Debug, "serial_device_control(), get baud rate %d",
 			       pser_inf->baud_rate);
 			break;
 		case SERIAL_SET_QUEUE_SIZE:
 			in_uint32_le(in, pser_inf->queue_in_size);
 			in_uint32_le(in, pser_inf->queue_out_size);
-			logger(Protocol, Debug,
+			logger(RDP_Protocol, Debug,
 			       "serial_device_control(), set queue size, in=%d out=%d",
 			       pser_inf->queue_in_size, pser_inf->queue_out_size);
 			break;
@@ -743,36 +743,36 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			in_uint8(in, pser_inf->parity);
 			in_uint8(in, pser_inf->word_length);
 			set_termios(pser_inf, handle);
-			logger(Protocol, Debug,
+			logger(RDP_Protocol, Debug,
 			       "serial_device_control(), set line control, stop=%d, parity=%d, word=%d",
 			       pser_inf->stop_bits, pser_inf->parity, pser_inf->word_length);
 			break;
 		case SERIAL_GET_LINE_CONTROL:
-			logger(Protocol, Debug, "serial_device_control(), get line control");
+			logger(RDP_Protocol, Debug, "serial_device_control(), get line control");
 			out_uint8(out, pser_inf->stop_bits);
 			out_uint8(out, pser_inf->parity);
 			out_uint8(out, pser_inf->word_length);
 			break;
 		case SERIAL_IMMEDIATE_CHAR:
-			logger(Protocol, Debug, "serial_device_control(), immediate char");
+			logger(RDP_Protocol, Debug, "serial_device_control(), immediate char");
 			in_uint8(in, immediate);
 			serial_write(handle, &immediate, 1, 0, &result);
 			break;
 		case SERIAL_CONFIG_SIZE:
-			logger(Protocol, Debug, "serial_device_control(), config size");
+			logger(RDP_Protocol, Debug, "serial_device_control(), config size");
 			out_uint32_le(out, 0);
 			break;
 		case SERIAL_GET_CHARS:
-			logger(Protocol, Debug, "serial_device_control(), get chars");
+			logger(RDP_Protocol, Debug, "serial_device_control(), get chars");
 			out_uint8a(out, pser_inf->chars, 6);
 			break;
 		case SERIAL_SET_CHARS:
-			logger(Protocol, Debug, "serial_device_control(), set chars");
+			logger(RDP_Protocol, Debug, "serial_device_control(), set chars");
 			in_uint8a(in, pser_inf->chars, 6);
 			set_termios(pser_inf, handle);
 			break;
 		case SERIAL_GET_HANDFLOW:
-			logger(Protocol, Debug, "serial_device_control(), get handflow");
+			logger(RDP_Protocol, Debug, "serial_device_control(), get handflow");
 			get_termios(pser_inf, handle);
 			out_uint32_le(out, pser_inf->control);
 			out_uint32_le(out, pser_inf->xonoff);	/* Xon/Xoff */
@@ -784,7 +784,7 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			in_uint32_le(in, pser_inf->xonoff);
 			in_uint32_le(in, pser_inf->onlimit);
 			in_uint32_le(in, pser_inf->offlimit);
-			logger(Protocol, Debug,
+			logger(RDP_Protocol, Debug,
 			       "serial_device_control(), set handflow, control=%x, xonoff=%x, onlimit=%x, offlimit=%x",
 			       pser_inf->control, pser_inf->xonoff, pser_inf->onlimit,
 			       pser_inf->offlimit);
@@ -796,14 +796,14 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			in_uint32(in, pser_inf->read_total_timeout_constant);
 			in_uint32(in, pser_inf->write_total_timeout_multiplier);
 			in_uint32(in, pser_inf->write_total_timeout_constant);
-			logger(Protocol, Debug,
+			logger(RDP_Protocol, Debug,
 			       "serial_device_control(), set timeouts, timeout=%d, multiplier=%d, constant=%d",
 			       pser_inf->read_interval_timeout,
 			       pser_inf->read_total_timeout_multiplier,
 			       pser_inf->read_total_timeout_constant);
 			break;
 		case SERIAL_GET_TIMEOUTS:
-			logger(Protocol, Debug,
+			logger(RDP_Protocol, Debug,
 			       "serial_device_control(), get timeouts, timeout=%d, multiplier=%d, constant=%d",
 			       pser_inf->read_interval_timeout,
 			       pser_inf->read_total_timeout_multiplier,
@@ -816,38 +816,38 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			out_uint32(out, pser_inf->write_total_timeout_constant);
 			break;
 		case SERIAL_GET_WAIT_MASK:
-			logger(Protocol, Debug, "serial_device_control(), get wait mask, mask=0x%x",
+			logger(RDP_Protocol, Debug, "serial_device_control(), get wait mask, mask=0x%x",
 			       pser_inf->wait_mask);
 			out_uint32(out, pser_inf->wait_mask);
 			break;
 		case SERIAL_SET_WAIT_MASK:
 			in_uint32(in, pser_inf->wait_mask);
-			logger(Protocol, Debug, "serial_device_control(), set wait mask, mask=0x%x",
+			logger(RDP_Protocol, Debug, "serial_device_control(), set wait mask, mask=0x%x",
 			       pser_inf->wait_mask);
 			break;
 		case SERIAL_SET_DTR:
-			logger(Protocol, Debug, "serial_device_control(), set dtr");
+			logger(RDP_Protocol, Debug, "serial_device_control(), set dtr");
 			ioctl(handle, TIOCMGET, &result);
 			result |= TIOCM_DTR;
 			ioctl(handle, TIOCMSET, &result);
 			pser_inf->dtr = 1;
 			break;
 		case SERIAL_CLR_DTR:
-			logger(Protocol, Debug, "serial_device_control(), clear dtr");
+			logger(RDP_Protocol, Debug, "serial_device_control(), clear dtr");
 			ioctl(handle, TIOCMGET, &result);
 			result &= ~TIOCM_DTR;
 			ioctl(handle, TIOCMSET, &result);
 			pser_inf->dtr = 0;
 			break;
 		case SERIAL_SET_RTS:
-			logger(Protocol, Debug, "serial_device_control(), set rts");
+			logger(RDP_Protocol, Debug, "serial_device_control(), set rts");
 			ioctl(handle, TIOCMGET, &result);
 			result |= TIOCM_RTS;
 			ioctl(handle, TIOCMSET, &result);
 			pser_inf->rts = 1;
 			break;
 		case SERIAL_CLR_RTS:
-			logger(Protocol, Debug, "serial_device_control(), clear rts");
+			logger(RDP_Protocol, Debug, "serial_device_control(), clear rts");
 			ioctl(handle, TIOCMGET, &result);
 			result &= ~TIOCM_RTS;
 			ioctl(handle, TIOCMSET, &result);
@@ -870,7 +870,7 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			if (result & TIOCM_RTS)
 				modemstate |= SERIAL_MS_RTS;
 #endif
-			logger(Protocol, Debug,
+			logger(RDP_Protocol, Debug,
 			       "serial_device_control(), get modem status, state=0x%x", modemstate);
 			out_uint32_le(out, modemstate);
 			break;
@@ -884,7 +884,7 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 #endif
 			out_uint32_le(out, result);	/* Amount in in queue */
 			if (result)
-				logger(Protocol, Debug,
+				logger(RDP_Protocol, Debug,
 				       "serial_device_control(), get comm status, %d bytes in input queue",
 				       result);
 
@@ -894,7 +894,7 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 #endif
 			out_uint32_le(out, result);	/* Amount in out queue */
 			if (result)
-				logger(Protocol, Debug,
+				logger(RDP_Protocol, Debug,
 				       "serial_device_control(), get comm status, %d bytes in output queue",
 				       result);
 
@@ -903,7 +903,7 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			break;
 		case SERIAL_PURGE:
 			in_uint32(in, purge_mask);
-			logger(Protocol, Debug, "serial_device_control(), purge, mask=0x%x",
+			logger(RDP_Protocol, Debug, "serial_device_control(), purge, mask=0x%x",
 			       purge_mask);
 			if ((purge_mask & SERIAL_PURGE_TXCLEAR)
 			    && (purge_mask & SERIAL_PURGE_RXCLEAR))
@@ -918,12 +918,12 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 				rdpdr_abort_io(handle, 3, RD_STATUS_CANCELLED);
 			break;
 		case SERIAL_WAIT_ON_MASK:
-			logger(Protocol, Debug, "serial_device_control(), wait on mask, mask=0x%x",
+			logger(RDP_Protocol, Debug, "serial_device_control(), wait on mask, mask=0x%x",
 			       pser_inf->wait_mask);
 			pser_inf->event_pending = 1;
 			if (serial_get_event(handle, &result))
 			{
-				logger(Protocol, Debug,
+				logger(RDP_Protocol, Debug,
 				       "serial_device_control(), wait end, event=0x%x", result);
 				out_uint32_le(out, result);
 				break;
@@ -931,24 +931,24 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			return RD_STATUS_PENDING;
 			break;
 		case SERIAL_SET_BREAK_ON:
-			logger(Protocol, Debug, "serial_device_control(), set break on");
+			logger(RDP_Protocol, Debug, "serial_device_control(), set break on");
 			tcsendbreak(handle, 0);
 			break;
 		case SERIAL_RESET_DEVICE:
-			logger(Protocol, Debug, "serial_device_control(), reset device");
+			logger(RDP_Protocol, Debug, "serial_device_control(), reset device");
 			break;
 		case SERIAL_SET_BREAK_OFF:
-			logger(Protocol, Debug, "serial_device_control(), set break off");
+			logger(RDP_Protocol, Debug, "serial_device_control(), set break off");
 			break;
 		case SERIAL_SET_XOFF:
-			logger(Protocol, Debug, "serial_device_control(), set xoff");
+			logger(RDP_Protocol, Debug, "serial_device_control(), set xoff");
 			break;
 		case SERIAL_SET_XON:
-			logger(Protocol, Debug, "serial_device_control(), set xon");
+			logger(RDP_Protocol, Debug, "serial_device_control(), set xon");
 			tcflow(handle, TCION);
 			break;
 		default:
-			logger(Protocol, Warning, "serial_device_control(), unhandled ioctl %d",
+			logger(RDP_Protocol, Warning, "serial_device_control(), unhandled ioctl %d",
 			       request);
 			return RD_STATUS_INVALID_PARAMETER;
 	}
@@ -976,13 +976,13 @@ serial_get_event(RD_NTHANDLE handle, uint32 * result)
 
 	if (bytes > 0)
 	{
-		logger(Protocol, Debug, "serial_get_event(), %d bytes", bytes);
+		logger(RDP_Protocol, Debug, "serial_get_event(), %d bytes", bytes);
 		if (bytes > pser_inf->event_rlsd)
 		{
 			pser_inf->event_rlsd = bytes;
 			if (pser_inf->wait_mask & SERIAL_EV_RLSD)
 			{
-				logger(Protocol, Debug,
+				logger(RDP_Protocol, Debug,
 				       "serial_get_event(), SERIAL_EV_RLSD is set");
 				*result |= SERIAL_EV_RLSD;
 				ret = True;
@@ -992,14 +992,14 @@ serial_get_event(RD_NTHANDLE handle, uint32 * result)
 
 		if ((bytes > 1) && (pser_inf->wait_mask & SERIAL_EV_RXFLAG))
 		{
-			logger(Protocol, Debug,
+			logger(RDP_Protocol, Debug,
 			       "serial_get_event(), SERIAL_EV_RXFLAG is set, %d bytes", bytes);
 			*result |= SERIAL_EV_RXFLAG;
 			ret = True;
 		}
 		if ((pser_inf->wait_mask & SERIAL_EV_RXCHAR))
 		{
-			logger(Protocol, Debug,
+			logger(RDP_Protocol, Debug,
 			       "serial_get_event(), SERIAL_EV_RXCHAR is set, %d bytes", bytes);
 			*result |= SERIAL_EV_RXCHAR;
 			ret = True;
@@ -1017,7 +1017,7 @@ serial_get_event(RD_NTHANDLE handle, uint32 * result)
 	if ((bytes == 0)
 	    && (pser_inf->event_txempty > 0) && (pser_inf->wait_mask & SERIAL_EV_TXEMPTY))
 	{
-		logger(Protocol, Debug, "serial_get_event(), SERIAL_EV_TXEMPT is set");
+		logger(RDP_Protocol, Debug, "serial_get_event(), SERIAL_EV_TXEMPT is set");
 		*result |= SERIAL_EV_TXEMPTY;
 		ret = True;
 	}
@@ -1030,7 +1030,7 @@ serial_get_event(RD_NTHANDLE handle, uint32 * result)
 		pser_inf->event_dsr = bytes & TIOCM_DSR;
 		if (pser_inf->wait_mask & SERIAL_EV_DSR)
 		{
-			logger(Protocol, Debug, "serial_get_event(), SERIAL_EV_DSR=%s",
+			logger(RDP_Protocol, Debug, "serial_get_event(), SERIAL_EV_DSR=%s",
 			       (bytes & TIOCM_DSR) ? "ON" : "OFF");
 			*result |= SERIAL_EV_DSR;
 			ret = True;
@@ -1042,7 +1042,7 @@ serial_get_event(RD_NTHANDLE handle, uint32 * result)
 		pser_inf->event_cts = bytes & TIOCM_CTS;
 		if (pser_inf->wait_mask & SERIAL_EV_CTS)
 		{
-			logger(Protocol, Debug, "serial_get_event(), SERIAL_EV_CTS=%s",
+			logger(RDP_Protocol, Debug, "serial_get_event(), SERIAL_EV_CTS=%s",
 			       (bytes & TIOCM_CTS) ? "ON" : "OFF");
 			*result |= SERIAL_EV_CTS;
 			ret = True;

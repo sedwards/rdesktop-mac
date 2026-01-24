@@ -1,5 +1,5 @@
 /*
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Smart Card support
    Copyright (C) Alexi Volkov <alexi@myrealbox.com> 2006
    Copyright 2010-2013 Pierre Ossman <ossman@cendio.se> for Cendio AB
@@ -890,16 +890,16 @@ TS_SCardConnect(STREAM in, STREAM out, RD_BOOL wide)
 	SERVER_SCARDCONTEXT hContext;
 	char *szReader;
 	SERVER_DWORD dwShareMode;
-	SERVER_DWORD dwPreferredProtocol;
+	SERVER_DWORD dwPreferredRDP_Protocol;
 	MYPCSC_SCARDHANDLE myHCard;
 	SERVER_SCARDHANDLE hCard;
 
-	MYPCSC_DWORD dwActiveProtocol;
+	MYPCSC_DWORD dwActiveRDP_Protocol;
 	PMEM_HANDLE lcHandle = NULL;
 
 	in_uint8s(in, 0x1C);
 	in_uint32_le(in, dwShareMode);
-	in_uint32_le(in, dwPreferredProtocol);
+	in_uint32_le(in, dwPreferredRDP_Protocol);
 	inReaderName(&lcHandle, in, &szReader, wide);
 	in_uint8s(in, 0x04);
 	in_uint32_le(in, hContext);
@@ -909,10 +909,10 @@ TS_SCardConnect(STREAM in, STREAM out, RD_BOOL wide)
 	logger(SmartCard, Debug,
 	       "TS_SCardConnect(), context: 0x%08x [0x%lx], share: 0x%08x, proto: 0x%08x, reader: '%s'",
 	       (unsigned) hContext, myHContext, (unsigned) dwShareMode,
-	       (unsigned) dwPreferredProtocol, szReader ? szReader : "NULL");
+	       (unsigned) dwPreferredRDP_Protocol, szReader ? szReader : "NULL");
 
 	rv = SCardConnect(myHContext, szReader, (MYPCSC_DWORD) dwShareMode,
-			  (MYPCSC_DWORD) dwPreferredProtocol, &myHCard, &dwActiveProtocol);
+			  (MYPCSC_DWORD) dwPreferredRDP_Protocol, &myHCard, &dwActiveRDP_Protocol);
 
 	hCard = 0;
 	if (myHCard)
@@ -967,7 +967,7 @@ TS_SCardConnect(STREAM in, STREAM out, RD_BOOL wide)
 	out_uint32_le(out, 0x00000004);
 	out_uint32_le(out, 0x016Cff34);
 	/* if the active protocol > 4 billion, this is trouble. odds are low */
-	out_uint32_le(out, (SERVER_DWORD) dwActiveProtocol);
+	out_uint32_le(out, (SERVER_DWORD) dwActiveRDP_Protocol);
 	out_uint32_le(out, 0x00000004);
 	out_uint32_le(out, hCard);
 
@@ -985,13 +985,13 @@ TS_SCardReconnect(STREAM in, STREAM out)
 	SERVER_SCARDHANDLE hCard;
 	MYPCSC_SCARDHANDLE myHCard;
 	SERVER_DWORD dwShareMode;
-	SERVER_DWORD dwPreferredProtocol;
+	SERVER_DWORD dwPreferredRDP_Protocol;
 	SERVER_DWORD dwInitialization;
-	MYPCSC_DWORD dwActiveProtocol;
+	MYPCSC_DWORD dwActiveRDP_Protocol;
 
 	in_uint8s(in, 0x20);
 	in_uint32_le(in, dwShareMode);
-	in_uint32_le(in, dwPreferredProtocol);
+	in_uint32_le(in, dwPreferredRDP_Protocol);
 	in_uint32_le(in, dwInitialization);
 	in_uint8s(in, 0x04);
 	in_uint32_le(in, hContext);
@@ -1004,10 +1004,10 @@ TS_SCardReconnect(STREAM in, STREAM out)
 	logger(SmartCard, Debug,
 	       "TS_SCardReconnect(), context: 0x%08x, hcard: 0x%08x [%lx], share: 0x%08x, proto: 0x%08x, init: 0x%08x",
 	       (unsigned) hContext, (unsigned) hCard, myHCard, (unsigned) dwShareMode,
-	       (unsigned) dwPreferredProtocol, (unsigned) dwInitialization);
+	       (unsigned) dwPreferredRDP_Protocol, (unsigned) dwInitialization);
 
-	rv = SCardReconnect(myHCard, (MYPCSC_DWORD) dwShareMode, (MYPCSC_DWORD) dwPreferredProtocol,
-			    (MYPCSC_DWORD) dwInitialization, &dwActiveProtocol);
+	rv = SCardReconnect(myHCard, (MYPCSC_DWORD) dwShareMode, (MYPCSC_DWORD) dwPreferredRDP_Protocol,
+			    (MYPCSC_DWORD) dwInitialization, &dwActiveRDP_Protocol);
 	if (rv != SCARD_S_SUCCESS)
 	{
 		logger(SmartCard, Debug, "TS_SCardReconnect(), failed: %s (0x%08x)",
@@ -1016,10 +1016,10 @@ TS_SCardReconnect(STREAM in, STREAM out)
 	else
 	{
 		logger(SmartCard, Debug, "TS_SCardReconnect(), success, proto=0x%08x",
-		       (unsigned) dwActiveProtocol);
+		       (unsigned) dwActiveRDP_Protocol);
 	}
 
-	out_uint32_le(out, (SERVER_DWORD) dwActiveProtocol);
+	out_uint32_le(out, (SERVER_DWORD) dwActiveRDP_Protocol);
 	outForceAlignment(out, 8);
 	s_mark_end(out);
 	return rv;

@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
-   Protocol services - Multipoint Communications Service
+   rdesktop: A Remote Desktop RDP_Protocol client.
+   RDP_Protocol services - Multipoint Communications Service
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
    Copyright 2005-2011 Peter Astrand <astrand@cendio.se> for Cendio AB
    Copyright 2018 Henrik Andersson <hean01@cendio.com> for Cendio AB
@@ -65,7 +65,7 @@ mcs_send_connect_initial(STREAM mcs_data)
 	int datalen = s_length(mcs_data);
 	int length = 9 + 3 * 34 + 4 + datalen;
 	STREAM s;
-	logger(Protocol, Debug, "%s()", __func__);
+	logger(RDP_Protocol, Debug, "%s()", __func__);
 	s = iso_init(length + 5);
 
 	ber_out_header(s, MCS_CONNECT_INITIAL, length);
@@ -101,11 +101,22 @@ mcs_recv_connect_response(STREAM mcs_data)
 	RD_BOOL is_fastpath;
 	uint8 fastpath_hdr;
 
-	logger(Protocol, Debug, "%s()", __func__);
+	logger(RDP_Protocol, Debug, "========================================");
+	logger(RDP_Protocol, Debug, "%s() ENTER - About to call iso_recv()", __func__);
+	logger(RDP_Protocol, Debug, "This call will block until data is received or timeout occurs");
+	logger(RDP_Protocol, Debug, "========================================");
+
 	s = iso_recv(&is_fastpath, &fastpath_hdr);
 
+	logger(RDP_Protocol, Debug, "%s() iso_recv() returned, s=%p", __func__, (void*)s);
+
 	if (s == NULL)
+	{
+		logger(RDP_Protocol, Error, "%s() iso_recv() returned NULL - connection failed or timeout", __func__);
 		return False;
+	}
+
+	logger(RDP_Protocol, Debug, "%s() iso_recv() successful, stream length=%d", __func__, s_length(s));
 	
 	packet = *s;
 
@@ -115,7 +126,7 @@ mcs_recv_connect_response(STREAM mcs_data)
 	in_uint8(s, result);
 	if (result != 0)
 	{
-		logger(Protocol, Error, "mcs_recv_connect_response(), result=%d", result);
+		logger(RDP_Protocol, Error, "mcs_recv_connect_response(), result=%d", result);
 		return False;
 	}
 
@@ -135,7 +146,7 @@ mcs_recv_connect_response(STREAM mcs_data)
 	/*
 	   if (length > mcs_data->size)
 	   {
-	   logger(Protocol, Error, "mcs_recv_connect_response(), expected length=%d, got %d",length, mcs_data->size);
+	   logger(RDP_Protocol, Error, "mcs_recv_connect_response(), expected length=%d, got %d",length, mcs_data->size);
 	   length = mcs_data->size;
 	   }
 
@@ -152,7 +163,7 @@ static void
 mcs_send_edrq(void)
 {
 	STREAM s;
-	logger(Protocol, Debug, "%s()", __func__);
+	logger(RDP_Protocol, Debug, "%s()", __func__);
 	s = iso_init(5);
 
 	out_uint8(s, (MCS_EDRQ << 2));
@@ -169,7 +180,7 @@ static void
 mcs_send_aurq(void)
 {
 	STREAM s;
-	logger(Protocol, Debug, "%s()", __func__);
+	logger(RDP_Protocol, Debug, "%s()", __func__);
 	s = iso_init(1);
 
 	out_uint8(s, (MCS_AURQ << 2));
@@ -188,7 +199,7 @@ mcs_recv_aucf(uint16 * mcs_userid)
 	uint8 opcode, result;
 	STREAM s;
 
-	logger(Protocol, Debug, "%s()", __func__);
+	logger(RDP_Protocol, Debug, "%s()", __func__);
 	s = iso_recv(&is_fastpath, &fastpath_hdr);
 
 	if (s == NULL)
@@ -197,14 +208,14 @@ mcs_recv_aucf(uint16 * mcs_userid)
 	in_uint8(s, opcode);
 	if ((opcode >> 2) != MCS_AUCF)
 	{
-		logger(Protocol, Error, "mcs_recv_aucf(), expected opcode AUcf, got %d", opcode);
+		logger(RDP_Protocol, Error, "mcs_recv_aucf(), expected opcode AUcf, got %d", opcode);
 		return False;
 	}
 
 	in_uint8(s, result);
 	if (result != 0)
 	{
-		logger(Protocol, Error, "mcs_recv_aucf(), expected result 0, got %d", result);
+		logger(RDP_Protocol, Error, "mcs_recv_aucf(), expected result 0, got %d", result);
 		return False;
 	}
 
@@ -220,7 +231,7 @@ mcs_send_cjrq(uint16 chanid)
 {
 	STREAM s;
 
-	logger(Protocol, Debug, "mcs_send_cjrq(), chanid=%d", chanid);
+	logger(RDP_Protocol, Debug, "mcs_send_cjrq(), chanid=%d", chanid);
 
 	s = iso_init(5);
 
@@ -242,7 +253,7 @@ mcs_recv_cjcf(void)
 	uint8 opcode, result;
 	STREAM s;
 
-	logger(Protocol, Debug, "%s()", __func__);
+	logger(RDP_Protocol, Debug, "%s()", __func__);
 	s = iso_recv(&is_fastpath, &fastpath_hdr);
 
 	if (s == NULL)
@@ -251,14 +262,14 @@ mcs_recv_cjcf(void)
 	in_uint8(s, opcode);
 	if ((opcode >> 2) != MCS_CJCF)
 	{
-		logger(Protocol, Error, "mcs_recv_cjcf(), expected opcode CJcf, got %d", opcode);
+		logger(RDP_Protocol, Error, "mcs_recv_cjcf(), expected opcode CJcf, got %d", opcode);
 		return False;
 	}
 
 	in_uint8(s, result);
 	if (result != 0)
 	{
-		logger(Protocol, Error, "mcs_recv_cjcf(), expected result 0, got %d", result);
+		logger(RDP_Protocol, Error, "mcs_recv_cjcf(), expected result 0, got %d", result);
 		return False;
 	}
 
@@ -276,7 +287,7 @@ mcs_send_dpu(unsigned short reason)
 {
 	STREAM s, contents;
 
-	logger(Protocol, Debug, "mcs_send_dpu(), reason=%d", reason);
+	logger(RDP_Protocol, Debug, "mcs_send_dpu(), reason=%d", reason);
 
 	contents = s_alloc(6);
 	ber_out_integer(contents, reason);	/* Reason */
@@ -351,7 +362,7 @@ mcs_recv(uint16 * channel, RD_BOOL * is_fastpath, uint8 * fastpath_hdr)
 	{
 		if (appid != MCS_DPUM)
 		{
-			logger(Protocol, Error, "mcs_recv(), expected data, got %d", opcode);
+			logger(RDP_Protocol, Error, "mcs_recv(), expected data, got %d", opcode);
 		}
 		return NULL;
 	}
@@ -368,7 +379,7 @@ RD_BOOL
 mcs_connect_start(char *server, char *username, char *domain, char *password,
 		  RD_BOOL reconnect, uint32 * selected_protocol)
 {
-	logger(Protocol, Debug, "%s()", __func__);
+	logger(RDP_Protocol, Debug, "%s()", __func__);
 	return iso_connect(server, username, domain, password, reconnect, selected_protocol);
 }
 
@@ -377,7 +388,7 @@ mcs_connect_finalize(STREAM mcs_data)
 {
 	unsigned int i;
 
-	logger(Protocol, Debug, "%s()", __func__);
+	logger(RDP_Protocol, Debug, "%s()", __func__);
 	mcs_send_connect_initial(mcs_data);
 	if (!mcs_recv_connect_response(mcs_data))
 		goto error;

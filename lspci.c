@@ -1,5 +1,5 @@
 /*  -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Support for the Matrox "lspci" channel
    Copyright (C) 2005 Matrox Graphics Inc.
    Copyright 2018 Henrik Andersson <hean01@cendio.se> for Cendio AB

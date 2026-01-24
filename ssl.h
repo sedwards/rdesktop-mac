@@ -29,12 +29,17 @@
 #include <nettle/hmac.h>
 #include <nettle/rsa.h>
 
-#include <gnutls/x509.h>
+#include <openssl/x509.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/rsa.h>
+#include <openssl/evp.h>
+#include <openssl/bn.h>
 
 #define RDSSL_RC4 struct arcfour_ctx
 #define RDSSL_SHA1 struct sha1_ctx
 #define RDSSL_MD5 struct md5_ctx
-#define RDSSL_CERT gnutls_x509_crt_t
+#define RDSSL_CERT X509
 #define RDSSL_RKEY struct rsa_public_key
 
 void rdssl_sha1_init(RDSSL_SHA1 * sha1);

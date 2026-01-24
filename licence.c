@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    RDP licensing negotiation
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
    Copyright (C) Thomas Uhle <thomas.uhle@mailbox.tu-dresden.de> 2011
@@ -21,7 +21,7 @@
 */
 
 #include "rdesktop.h"
-#include "ssl.h"
+#include "macssl.h"
 
 extern char *g_username;
 extern char g_hostname[16];
@@ -173,7 +173,7 @@ licence_process_request(STREAM s)
 		rdssl_rc4_set_key(&crypt_key, g_licence_key, 16);
 		rdssl_rc4_crypt(&crypt_key, hwid, hwid, sizeof(hwid));
 
-		logger(Protocol, Debug,
+		logger(RDP_Protocol, Debug,
 		       "license_process_request(), sending licensing PDU (message type 0x%02x)",
 		       LICENCE_TAG_LICENCE_INFO);
 
@@ -183,7 +183,7 @@ licence_process_request(STREAM s)
 		return;
 	}
 
-	logger(Protocol, Debug,
+	logger(RDP_Protocol, Debug,
 	       "license_process_request(), sending licensing PDU (message type 0x%02x)",
 	       LICENCE_TAG_NEW_LICENCE_REQUEST);
 
@@ -230,7 +230,7 @@ licence_parse_platform_challenge(STREAM s, uint8 ** token, uint8 ** signature)
 	in_uint16_le(s, tokenlen);
 	if (tokenlen != LICENCE_TOKEN_SIZE)
 	{
-		logger(Protocol, Error,
+		logger(RDP_Protocol, Error,
 		       "license_parse_platform_challenge(), tokenlen != LICENSE_TOKEN_SIZE");
 		return False;
 	}
@@ -372,7 +372,7 @@ licence_process(STREAM s)
 	in_uint8(s, tag);
 	in_uint8s(s, 3);	/* version, length */
 
-	logger(Protocol, Debug, "license_process(), processing licensing PDU (message type 0x%02x)",
+	logger(RDP_Protocol, Debug, "license_process(), processing licensing PDU (message type 0x%02x)",
 	       tag);
 
 	switch (tag)
@@ -396,7 +396,7 @@ licence_process(STREAM s)
 			break;
 
 		default:
-			logger(Protocol, Warning,
+			logger(RDP_Protocol, Warning,
 			       "license_process(), unhandled license PDU tag 0x%02", tag);
 	}
 }

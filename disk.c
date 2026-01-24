@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Disk Redirection
    Copyright (C) Jeroen Meijer <jeroen@oldambt7.com> 2003-2008
    Copyright 2003-2011 Peter Astrand <astrand@cendio.se> for Cendio AB
@@ -20,6 +20,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "disk.h"
 

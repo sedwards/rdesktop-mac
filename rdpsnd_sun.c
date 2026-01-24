@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Sound Channel Process Functions - Sun
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 2003-2008
    Copyright (C) GuoJunBo <guojunbo@ict.ac.cn> 2003

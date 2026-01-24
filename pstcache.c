@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Persistent Bitmap Cache routines
    Copyright (C) Jeroen Meijer <jeroen@oldambt7.com> 2004-2008
 

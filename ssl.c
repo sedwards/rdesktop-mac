@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Secure sockets abstraction layer
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
    Copyright (C) Jay Sorg <j@american-data.com> 2006-2008
@@ -24,7 +24,12 @@
 #include "ssl.h"
 #include "asn.h"
 
-#include <gnutls/x509.h>
+#include <openssl/x509.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/rsa.h>
+#include <openssl/evp.h>
+#include <openssl/bn.h>
 
 void
 rdssl_sha1_init(RDSSL_SHA1 * sha1)
@@ -112,31 +117,12 @@ rdssl_rsa_encrypt(uint8 * out, uint8 * in, int len, uint32 modulus_size, uint8 *
 RDSSL_CERT *
 rdssl_cert_read(uint8 * data, uint32 len)
 {
-	int ret;
-	gnutls_datum_t cert_data;
-	gnutls_x509_crt_t *cert;
-
-	cert = malloc(sizeof(*cert));
+	const unsigned char *p = data;
+	X509 *cert = d2i_X509(NULL, &p, len);
 
 	if (!cert) {
-		logger(Protocol, Error, "%s:%s:%d: Failed to allocate memory for certificate structure.\n",
-				__FILE__, __func__, __LINE__);
-		return NULL;
-	}
-
-	if ((ret = gnutls_x509_crt_init(cert)) != GNUTLS_E_SUCCESS) {
-		logger(Protocol, Error, "%s:%s:%d: Failed to init certificate structure. GnuTLS error = 0x%02x (%s)\n",
-				__FILE__, __func__, __LINE__, ret, gnutls_strerror(ret));
-
-		return NULL;
-	}
-
-	cert_data.size = len;
-	cert_data.data = data;
-
-	if ((ret = gnutls_x509_crt_import(*cert, &cert_data, GNUTLS_X509_FMT_DER)) != GNUTLS_E_SUCCESS) {
-		logger(Protocol, Error, "%s:%s:%d: Failed to import DER encoded certificate. GnuTLS error = 0x%02x (%s)\n",
-				__FILE__, __func__, __LINE__, ret, gnutls_strerror(ret));
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to parse DER encoded certificate. OpenSSL error = %s\n",
+				__FILE__, __func__, __LINE__, ERR_error_string(ERR_get_error(), NULL));
 		return NULL;
 	}
 
@@ -146,8 +132,7 @@ rdssl_cert_read(uint8 * data, uint32 len)
 void
 rdssl_cert_free(RDSSL_CERT * cert)
 {
-	gnutls_x509_crt_deinit(*cert);
-	free(cert);
+	X509_free(cert);
 }
 
 
@@ -170,92 +155,93 @@ rdssl_cert_free(RDSSL_CERT * cert)
 RDSSL_RKEY *
 rdssl_cert_to_rkey(RDSSL_CERT * cert, uint32 * key_len)
 {
-	int ret;
+	EVP_PKEY *pkey = NULL;
+	RSA *rsa = NULL;
+	const BIGNUM *n = NULL, *e = NULL;
+	RDSSL_RKEY *rkey = NULL;
+	uint8_t *n_buf = NULL, *e_buf = NULL;
+	size_t n_len, e_len;
 
-	RDSSL_RKEY *pkey;
-	gnutls_datum_t m, e;
-
-	unsigned int algo, bits;
-	char oid[64];
-	size_t oid_size = sizeof(oid);
-
-	uint8_t data[2048];
-	size_t len;
-
-	algo = gnutls_x509_crt_get_pk_algorithm(*cert, &bits);
-
-	/* By some reason, Microsoft sets the OID of the Public RSA key to
-	   the oid for "MD5 with RSA Encryption" instead of "RSA Encryption"
-
-	   Kudos to Richard Levitte for the finding this and proposed the fix
-	   using OpenSSL. */
-
-	if (algo == GNUTLS_PK_RSA) {
-
-		if ((ret = gnutls_x509_crt_get_pk_rsa_raw(*cert, &m, &e)) !=  GNUTLS_E_SUCCESS) {
-			logger(Protocol, Error, "%s:%s:%d: Failed to get RSA public key parameters from certificate. GnuTLS error = 0x%02x (%s)\n",
-					__FILE__, __func__, __LINE__, ret, gnutls_strerror(ret));
-			return NULL;
-		}
-
-	} else if (algo == GNUTLS_E_UNIMPLEMENTED_FEATURE) {
-
-		len = sizeof(data);
-		if ((ret = gnutls_x509_crt_export(*cert, GNUTLS_X509_FMT_DER, data, &len)) != GNUTLS_E_SUCCESS) {
-			logger(Protocol, Error, "%s:%s:%d: Failed to encode X.509 certificate to DER. GnuTLS error = 0x%02x (%s)\n",
-					__FILE__, __func__, __LINE__, ret, gnutls_strerror(ret));
-			return NULL;
-		}
-
-		/* Validate public key algorithm as OID_SHA_WITH_RSA_SIGNATURE
-		   or OID_MD5_WITH_RSA_SIGNATURE
-		*/
-		if ((ret = libtasn_read_cert_pk_oid(data, len, oid, &oid_size)) != 0) {
-			logger(Protocol, Error, "%s:%s:%d: Failed to get OID of public key algorithm.\n",
-					__FILE__, __func__, __LINE__);
-			return NULL;
-		}
-
-		if (!(strncmp(oid, OID_SHA_WITH_RSA_SIGNATURE, strlen(OID_SHA_WITH_RSA_SIGNATURE)) == 0
-				|| strncmp(oid, OID_MD5_WITH_RSA_SIGNATURE, strlen(OID_MD5_WITH_RSA_SIGNATURE)) == 0))
-		{
-			logger(Protocol, Error, "%s:%s:%d: Wrong public key algorithm algo = 0x%02x (%s)\n",
-					__FILE__, __func__, __LINE__, algo, oid);
-			return NULL;
-		}
-
-		/* Get public key parameters */
-		if ((ret = libtasn_read_cert_pk_parameters(data, len, &m, &e)) != 0) {
-			logger(Protocol, Error, "%s:%s:%d: Failed to read RSA public key parameters\n",
-					__FILE__, __func__, __LINE__);
-
-			return NULL;
-		}
-
-	} else {
-		logger(Protocol, Error, "%s:%s:%d: Failed to get public key algorithm from certificate. algo = 0x%02x (%d)\n",
-				__FILE__, __func__, __LINE__, algo, algo);
-		return NULL;
-	}
-
-	pkey = malloc(sizeof(*pkey));
-
+	/* Extract public key from certificate */
+	pkey = X509_get_pubkey(cert);
 	if (!pkey) {
-		logger(Protocol, Error, "%s:%s:%d: Failed to allocate memory for  RSA public key\n",
-				__FILE__, __func__, __LINE__);
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to get public key from certificate. OpenSSL error = %s\n",
+				__FILE__, __func__, __LINE__, ERR_error_string(ERR_get_error(), NULL));
 		return NULL;
 	}
 
-	rsa_public_key_init(pkey);
+	/* Get RSA key from EVP_PKEY */
+	rsa = EVP_PKEY_get1_RSA(pkey);
+	if (!rsa) {
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to get RSA key from public key. OpenSSL error = %s\n",
+				__FILE__, __func__, __LINE__, ERR_error_string(ERR_get_error(), NULL));
+		EVP_PKEY_free(pkey);
+		return NULL;
+	}
 
-	mpz_import(pkey->n, m.size, 1, sizeof(m.data[0]), 0, 0, m.data);
-	mpz_import(pkey->e, e.size, 1, sizeof(e.data[0]), 0, 0, e.data);
+	/* Get RSA modulus (n) and exponent (e) */
+	RSA_get0_key(rsa, &n, &e, NULL);
+	if (!n || !e) {
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to get RSA modulus/exponent\n",
+				__FILE__, __func__, __LINE__);
+		RSA_free(rsa);
+		EVP_PKEY_free(pkey);
+		return NULL;
+	}
 
-	rsa_public_key_prepare(pkey);
+	/* Allocate RDSSL_RKEY structure */
+	rkey = malloc(sizeof(*rkey));
+	if (!rkey) {
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to allocate memory for RSA public key\n",
+				__FILE__, __func__, __LINE__);
+		RSA_free(rsa);
+		EVP_PKEY_free(pkey);
+		return NULL;
+	}
 
-	*key_len = pkey->size;
+	rsa_public_key_init(rkey);
 
-	return pkey;
+	/* Convert BIGNUM to binary and import into GMP mpz_t */
+	n_len = BN_num_bytes(n);
+	n_buf = malloc(n_len);
+	if (!n_buf) {
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to allocate buffer for modulus\n",
+				__FILE__, __func__, __LINE__);
+		rsa_public_key_clear(rkey);
+		free(rkey);
+		RSA_free(rsa);
+		EVP_PKEY_free(pkey);
+		return NULL;
+	}
+	BN_bn2bin(n, n_buf);
+	mpz_import(rkey->n, n_len, 1, 1, 0, 0, n_buf);
+
+	e_len = BN_num_bytes(e);
+	e_buf = malloc(e_len);
+	if (!e_buf) {
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to allocate buffer for exponent\n",
+				__FILE__, __func__, __LINE__);
+		free(n_buf);
+		rsa_public_key_clear(rkey);
+		free(rkey);
+		RSA_free(rsa);
+		EVP_PKEY_free(pkey);
+		return NULL;
+	}
+	BN_bn2bin(e, e_buf);
+	mpz_import(rkey->e, e_len, 1, 1, 0, 0, e_buf);
+
+	free(n_buf);
+	free(e_buf);
+
+	rsa_public_key_prepare(rkey);
+
+	*key_len = rkey->size;
+
+	RSA_free(rsa);
+	EVP_PKEY_free(pkey);
+
+	return rkey;
 }
 
 /* returns boolean */
@@ -279,15 +265,25 @@ rdssl_certs_ok(RDSSL_CERT * server_cert, RDSSL_CERT * cacert)
 int
 rdssl_cert_print_fp(FILE * fp, RDSSL_CERT * cert)
 {
-	int ret;
-	gnutls_datum_t cinfo;
+	X509_NAME *subject;
+	char *subj_str;
 
-	ret = gnutls_x509_crt_print(*cert, GNUTLS_CRT_PRINT_ONELINE, &cinfo);
-
-	if (ret == 0) {
-		fprintf (fp, "\t%s\n", cinfo.data);
-		gnutls_free(cinfo.data);
+	subject = X509_get_subject_name(cert);
+	if (!subject) {
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to get certificate subject\n",
+				__FILE__, __func__, __LINE__);
+		return 1;
 	}
+
+	subj_str = X509_NAME_oneline(subject, NULL, 0);
+	if (!subj_str) {
+		logger(RDP_Protocol, Error, "%s:%s:%d: Failed to convert subject to string\n",
+				__FILE__, __func__, __LINE__);
+		return 1;
+	}
+
+	fprintf(fp, "\t%s\n", subj_str);
+	OPENSSL_free(subj_str);
 
 	return 0;
 }

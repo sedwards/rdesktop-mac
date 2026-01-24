@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Seamless Windows support
    Copyright 2005-2008 Peter Astrand <astrand@cendio.se> for Cendio AB
    Copyright 2007-2008 Pierre Ossman <ossman@cendio.se> for Cendio AB
@@ -171,7 +171,7 @@ seamless_process_line(const char *line, void *data)
 
 			if ((size_t)len >= sizeof(icon_buf))
 			{
-				logger(Protocol, Warning, "seamless_process_line(), icon data would overrun icon_buf");
+				logger(RDP_Protocol, Warning, "seamless_process_line(), icon data would overrun icon_buf");
 				break;
 			}
 		}

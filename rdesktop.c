@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   rdesktop: A Remote Desktop RDP_Protocol client.
    Entrypoint and utility functions
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 1999-2008
    Copyright 2002-2011 Peter Astrand <astrand@cendio.se> for Cendio AB
@@ -19,6 +19,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdarg.h>		/* va_list va_start va_end */
 #include <unistd.h>		/* read close getuid getgid getpid getppid gethostname */
@@ -48,7 +52,7 @@
 #include <sys/un.h>		/* sockaddr_un */
 #endif
 
-#include "ssl.h"
+#include "macssl.h"
 
 /* Reconnect timeout based on approximated cookie life-time */
 #define RECONNECT_TIMEOUT (3600+600)
@@ -76,7 +80,7 @@ int g_dpi = 0;			/* device DPI: default not set */
 uint32 g_requested_session_width = 1024;
 uint32 g_requested_session_height = 768;
 
-window_size_type_t g_window_size_type = Fixed;
+window_size_type_t g_window_size_type = RDP_Fixed;
 
 
 int g_xpos = 0;
@@ -164,7 +168,7 @@ extern char *g_rdpdr_clientname;
 static void
 usage(char *program)
 {
-	fprintf(stderr, "rdesktop: A Remote Desktop Protocol client.\n");
+	fprintf(stderr, "rdesktop: A Remote Desktop RDP_Protocol client.\n");
 	fprintf(stderr,
 		"Version " PACKAGE_VERSION ". Copyright (C) 1999-2016 Matthew Chapman et al.\n");
 	fprintf(stderr, "See http://www.rdesktop.org/ for more information.\n\n");
@@ -655,7 +659,7 @@ parse_geometry_string(const char *optarg)
 		g_requested_session_height = value;
 		ps = pe;
 
-		if (*ps == '%' && g_window_size_type == Fixed)
+		if (*ps == '%' && g_window_size_type == RDP_Fixed)
 		{
 			logger(Core, Error, "invalid geometry, unexpected '%%' after height");
 			return -1;
@@ -754,7 +758,7 @@ setup_user_requested_session_size()
 					     &g_requested_session_height);
 			break;
 
-		case Fixed:
+		case RDP_Fixed:
 			break;
 
 		case PercentageOfScreen:
@@ -769,7 +773,7 @@ setup_user_requested_session_size()
 
 /* Client program */
 int
-main(int argc, char *argv[])
+rdesktop_main(int argc, char *argv[])
 {
 	char server[256];
 	char fullhostname[64];
@@ -1248,7 +1252,11 @@ main(int argc, char *argv[])
 	{
 		if (setlocale(LC_CTYPE, ""))
 		{
+#ifdef HAVE_LANGINFO_H
 			STRNCPY(g_codepage, nl_langinfo(CODESET), sizeof(g_codepage));
+#else
+			STRNCPY(g_codepage, DEFAULT_CODEPAGE, sizeof(g_codepage));
+#endif
 		}
 		else
 		{
@@ -2163,4 +2171,10 @@ rd_lock_file(int fd, int start, int len)
 	if (fcntl(fd, F_SETLK, &lock) == -1)
 		return False;
 	return True;
+}
+
+/* Main function wrapper for command line usage */
+int main(int argc, char *argv[])
+{
+	return rdesktop_main(argc, argv);
 }

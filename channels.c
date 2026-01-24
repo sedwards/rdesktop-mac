@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
-   Protocol services - Virtual channels
+   rdesktop: A Remote Desktop RDP_Protocol client.
+   RDP_Protocol services - Virtual channels
    Copyright 2003 Erik Forsberg <forsberg@cendio.se> for Cendio AB
    Copyright (C) Matthew Chapman <matthewc.unsw.edu.au> 2003-2008
    Copyright 2016 Alexander Zakharov <uglym8@gmail.com>
@@ -113,7 +113,7 @@ channel_send_chunk(STREAM s, VCHANNEL * channel, uint32 length)
 		flags |= CHANNEL_FLAG_SHOW_PROTOCOL;
 	}
 
-	logger(Protocol, Debug, "channel_send_chunk(), sending %d bytes with flags 0x%x",
+	logger(RDP_Protocol, Debug, "channel_send_chunk(), sending %d bytes with flags 0x%x",
 	       thislength, flags);
 
 	/* first fragment sent in-place */
@@ -169,7 +169,7 @@ channel_send(STREAM s, VCHANNEL * channel)
 	in_uint8s(s, 8);
 	length = s_remaining(s);
 
-	logger(Protocol, Debug, "channel_send(), channel = %d, length = %d", channel->mcs_id,
+	logger(RDP_Protocol, Debug, "channel_send(), channel = %d, length = %d", channel->mcs_id,
 	       length);
 
 	while (!s_check_end(s))
