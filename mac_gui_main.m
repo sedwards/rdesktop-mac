@@ -112,7 +112,7 @@ extern int rdesktop_main(int argc, char *argv[]);
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender {
-    return YES;
+    return NO;
 }
 
 @end
@@ -382,6 +382,12 @@ int launch_rdp_connection_from_gui(void) {
     // Add hostname
     fake_argv[fake_argc++] = g_hostname;
     fake_argv[fake_argc] = NULL;
+
+    // Log the constructed arguments for debugging
+    NSLog(@"[macOS GUI] Constructed fake_argv (argc=%d):", fake_argc);
+    for (int i = 0; i < fake_argc; i++) {
+        NSLog(@"  fake_argv[%d] = '%s'", i, fake_argv[i]);
+    }
     
     // Call the main RDP connection function
     return rdesktop_main(fake_argc, fake_argv);

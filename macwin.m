@@ -22,6 +22,7 @@
 #import <CoreGraphics/CoreGraphics.h>
 #import <ImageIO/ImageIO.h>
 #include <assert.h>
+#include <pthread.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
@@ -45,6 +46,67 @@
 - (void)stopDisplayTimer;
 @end
 
+typedef enum {
+    EVENT_MOUSE,
+    EVENT_KEY
+} rdp_event_type_t;
+
+typedef struct {
+    rdp_event_type_t type;
+    uint32 time;
+    uint16 flags;
+    int x_or_scancode;
+    int y;
+} rdp_queued_event_t;
+
+#define EVENT_QUEUE_SIZE 256
+static rdp_queued_event_t g_event_queue[EVENT_QUEUE_SIZE];
+static int g_queue_head = 0;
+static int g_queue_tail = 0;
+static pthread_mutex_t g_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void queue_input_event(rdp_event_type_t type, uint32 time, uint16 flags, int param1, int param2) {
+    extern RD_BOOL g_connection_established;
+    if (!g_connection_established) {
+        return;
+    }
+    pthread_mutex_lock(&g_queue_mutex);
+    int next_tail = (g_queue_tail + 1) % EVENT_QUEUE_SIZE;
+    if (next_tail != g_queue_head) { // not full
+        g_event_queue[g_queue_tail].type = type;
+        g_event_queue[g_queue_tail].time = time;
+        g_event_queue[g_queue_tail].flags = flags;
+        g_event_queue[g_queue_tail].x_or_scancode = param1;
+        g_event_queue[g_queue_tail].y = param2;
+        g_queue_tail = next_tail;
+    }
+    pthread_mutex_unlock(&g_queue_mutex);
+}
+
+void process_queued_input_events(void) {
+    while (1) {
+        rdp_queued_event_t ev;
+        int has_event = 0;
+
+        pthread_mutex_lock(&g_queue_mutex);
+        if (g_queue_head != g_queue_tail) {
+            ev = g_event_queue[g_queue_head];
+            g_queue_head = (g_queue_head + 1) % EVENT_QUEUE_SIZE;
+            has_event = 1;
+        }
+        pthread_mutex_unlock(&g_queue_mutex);
+
+        if (!has_event) break;
+
+        if (ev.type == EVENT_MOUSE) {
+            rdp_send_input(ev.time, RDP_INPUT_MOUSE, ev.flags, ev.x_or_scancode, ev.y);
+        } else if (ev.type == EVENT_KEY) {
+            rdp_send_input(ev.time, RDP_INPUT_SCANCODE, ev.flags, ev.x_or_scancode, 0);
+        }
+    }
+}
+
+
 /* Data release callback for glyph data */
 static void glyph_data_release_callback(void *info, const void *data, size_t size) {
     (void)info;
@@ -61,8 +123,7 @@ static NSApplication *g_app = nil;
 static RDPWindow *g_window = nil;
 static RDPView *g_view = nil;
 static CGColorSpaceRef g_colorspace = NULL;
-static double g_last_display_time = 0.0;  // Throttle display updates
-static dispatch_queue_t g_ui_queue = NULL;  // Dispatch queue for UI operations
+
 
 // RDP state
 extern RD_BOOL g_rdpsnd;
@@ -76,7 +137,8 @@ extern uint32 g_rdp_shareid;
 uint16 g_width = 800;
 uint16 g_height = 600;
 extern int g_server_depth;  // Defined in rdesktop_main.c
-static RD_BOOL g_backstore = True;
+extern uint8 mac_keycode_to_scancode(uint16 keycode);
+
 
 /* Thread-safe UI dispatch macro */
 #define DISPATCH_UI_SYNC(block) \
@@ -222,6 +284,8 @@ mac_fatal(char *format, ...)
     self = [super initWithFrame:frameRect];
     if (self) {
         NSLog(@"[macOS DEBUG] RDPView: super initWithFrame successful, setting up backing store...");
+        self.wantsLayer = YES;
+        self.layer.contentsGravity = @"resize";
         self.backingStoreLock = [[NSRecursiveLock alloc] init];  // Recursive lock to allow nested drawing calls
         [self setupBackingStore:frameRect.size];
         self.needsRedraw = NO;
@@ -243,8 +307,8 @@ mac_fatal(char *format, ...)
 
 - (void)startDisplayTimer {
     if (!self.displayTimer) {
-        // 30 FPS refresh rate (every ~33ms)
-        self.displayTimer = [NSTimer scheduledTimerWithTimeInterval:0.033
+        // 60 FPS refresh rate (every ~16ms)
+        self.displayTimer = [NSTimer scheduledTimerWithTimeInterval:0.016
                                                              target:self
                                                            selector:@selector(timerFired:)
                                                            userInfo:nil
@@ -261,51 +325,29 @@ mac_fatal(char *format, ...)
 
 - (void)timerFired:(NSTimer *)timer {
     (void)timer;
+    BOOL redraw = NO;
+    [self.backingStoreLock lock];
     if (self.needsRedraw) {
-        NSLog(@"[macOS DEBUG] timerFired: needsRedraw=YES, triggering display");
         self.needsRedraw = NO;
-        [self display];
+        redraw = YES;
+    }
+
+    if (redraw && self.backingStore) {
+        CGImageRef image = CGBitmapContextCreateImage(self.backingStore);
+        [self.backingStoreLock unlock];
+
+        if (image) {
+            self.layer.contents = (id)image;
+            CGImageRelease(image);
+        }
+    } else {
+        [self.backingStoreLock unlock];
     }
 }
 
 - (void)drawRect:(NSRect)dirtyRect {
-    NSLog(@"[macOS DEBUG] RDPView drawRect called: dirtyRect origin=(%.0f,%.0f) size=(%.0fx%.0f)",
-          dirtyRect.origin.x, dirtyRect.origin.y, dirtyRect.size.width, dirtyRect.size.height);
-
-    [self.backingStoreLock lock];
-
-    if (!self.backingStore) {
-        NSLog(@"[macOS DEBUG] RDPView drawRect: WARNING - backingStore is NULL!");
-        [self.backingStoreLock unlock];
-        return;
-    }
-
-    NSLog(@"[macOS DEBUG] RDPView drawRect: creating image from backing store");
-    CGImageRef image = CGBitmapContextCreateImage(self.backingStore);
-
-    [self.backingStoreLock unlock];
-
-    if (!image) {
-        NSLog(@"[macOS DEBUG] RDPView drawRect: ERROR - failed to create image from backing store!");
-        return;
-    }
-
-    // Get the current graphics context
-    NSGraphicsContext *nsContext = [NSGraphicsContext currentContext];
-    CGContextRef cgContext = [nsContext CGContext];
-
-    if (!cgContext) {
-        NSLog(@"[macOS DEBUG] RDPView drawRect: ERROR - no current CGContext!");
-        CGImageRelease(image);
-        return;
-    }
-
-    // Draw the image - both backing store and view use bottom-left origin
-    // No coordinate transformation needed
-    CGContextDrawImage(cgContext, self.bounds, image);
-
-    CGImageRelease(image);
-    NSLog(@"[macOS DEBUG] RDPView drawRect: image drawn successfully");
+    // Drawing is handled by CALayer contents for hardware acceleration
+    (void)dirtyRect;
 }
 
 - (BOOL)acceptsFirstResponder {
@@ -315,58 +357,58 @@ mac_fatal(char *format, ...)
 - (void)keyDown:(NSEvent *)event {
     // Convert NSEvent to RDP key event
     uint16 keycode = [event keyCode];
-    rdp_send_scancode([event timestamp] * 1000, RDP_KEYPRESS, keycode);
+    uint8 scancode = mac_keycode_to_scancode(keycode);
+    queue_input_event(EVENT_KEY, [event timestamp] * 1000, RDP_KEYPRESS, scancode, 0);
 }
 
 - (void)keyUp:(NSEvent *)event {
     uint16 keycode = [event keyCode];
-    rdp_send_scancode([event timestamp] * 1000, RDP_KEYRELEASE, keycode);
+    uint8 scancode = mac_keycode_to_scancode(keycode);
+    queue_input_event(EVENT_KEY, [event timestamp] * 1000, RDP_KEYRELEASE, scancode, 0);
 }
 
 - (void)mouseDown:(NSEvent *)event {
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-    NSLog(@"[MOUSE] mouseDown at (%.0f, %.0f) g_height=%d", point.x, point.y, g_height);
-    rdp_send_input([event timestamp] * 1000, RDP_INPUT_MOUSE,
-                   MOUSE_FLAG_BUTTON1 | MOUSE_FLAG_DOWN, (int)point.x, (int)point.y);
+    int rdp_y = g_height - (int)point.y;
+    queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_BUTTON1 | MOUSE_FLAG_DOWN, (int)point.x, rdp_y);
 }
 
 - (void)mouseUp:(NSEvent *)event {
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-    rdp_send_input([event timestamp] * 1000, RDP_INPUT_MOUSE,
-                   MOUSE_FLAG_BUTTON1, (int)point.x, (int)point.y);
+    int rdp_y = g_height - (int)point.y;
+    queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_BUTTON1, (int)point.x, rdp_y);
 }
 
 - (void)rightMouseDown:(NSEvent *)event {
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-    rdp_send_input([event timestamp] * 1000, RDP_INPUT_MOUSE,
-                   MOUSE_FLAG_BUTTON2 | MOUSE_FLAG_DOWN, (int)point.x, (int)point.y);
+    int rdp_y = g_height - (int)point.y;
+    queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_BUTTON2 | MOUSE_FLAG_DOWN, (int)point.x, rdp_y);
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-    rdp_send_input([event timestamp] * 1000, RDP_INPUT_MOUSE,
-                   MOUSE_FLAG_BUTTON2, (int)point.x, (int)point.y);
+    int rdp_y = g_height - (int)point.y;
+    queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_BUTTON2, (int)point.x, rdp_y);
 }
 
 - (void)mouseMoved:(NSEvent *)event {
     if (g_sendmotion) {
         NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-        rdp_send_input([event timestamp] * 1000, RDP_INPUT_MOUSE,
-                       MOUSE_FLAG_MOVE, point.x, point.y);
+        int rdp_y = g_height - (int)point.y;
+        queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_MOVE, (int)point.x, rdp_y);
     }
 }
 
 - (void)mouseDragged:(NSEvent *)event {
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-    NSLog(@"[macOS DEBUG] mouseDragged to coordinates: (%.0f, %.0f)", point.x, point.y);
-    rdp_send_input([event timestamp] * 1000, RDP_INPUT_MOUSE,
-                   MOUSE_FLAG_BUTTON1 | MOUSE_FLAG_MOVE, point.x, point.y);
+    int rdp_y = g_height - (int)point.y;
+    queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_BUTTON1 | MOUSE_FLAG_MOVE, (int)point.x, rdp_y);
 }
 
 - (void)rightMouseDragged:(NSEvent *)event {
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-    rdp_send_input([event timestamp] * 1000, RDP_INPUT_MOUSE,
-                   MOUSE_FLAG_BUTTON2 | MOUSE_FLAG_MOVE, point.x, point.y);
+    int rdp_y = g_height - (int)point.y;
+    queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_BUTTON2 | MOUSE_FLAG_MOVE, (int)point.x, rdp_y);
 }
 
 @end
@@ -420,7 +462,8 @@ mac_fatal(char *format, ...)
 }
 
 - (void)windowWillClose:(NSNotification *)notification {
-    [NSApp terminate:self];
+    extern RD_BOOL g_exit_mainloop;
+    g_exit_mainloop = True;
 }
 
 @end
@@ -660,9 +703,12 @@ ui_destroy_window(void)
     }
 }
 
+
+
 void
 ui_select(int rdp_socket)
 {
+    process_queued_input_events();
     fd_set rfds;
     struct timeval tv;
     int retval;
@@ -671,36 +717,25 @@ ui_select(int rdp_socket)
     FD_SET(rdp_socket, &rfds);
 
     tv.tv_sec = 0;
-    tv.tv_usec = 16000;  // 10ms timeout - balance between responsiveness and CPU usage
+    tv.tv_usec = 5000;  // 5ms timeout - responsive and CPU efficient
 
     retval = select(rdp_socket + 1, &rfds, NULL, NULL, &tv);
     (void)retval; // Suppress unused variable warning
 
     // Process Cocoa events synchronously (only if we're on the main thread)
     if ([NSThread isMainThread]) {
-        int event_count = 0;
         NSEvent *event;
         while ((event = [g_app nextEventMatchingMask:NSEventMaskAny
                                             untilDate:[NSDate distantPast]
                                                inMode:NSDefaultRunLoopMode
                                               dequeue:YES]))
         {
-            event_count++;
-            NSEventType type = [event type];
-            if (type == NSEventTypeLeftMouseDown || type == NSEventTypeLeftMouseUp ||
-                type == NSEventTypeRightMouseDown || type == NSEventTypeRightMouseUp ||
-                type == NSEventTypeMouseMoved || type == NSEventTypeLeftMouseDragged) {
-                NSLog(@"[EVENT] Processing mouse event type=%ld", (long)type);
-            }
             [g_app sendEvent:event];
             [g_app updateWindows];
         }
-        if (event_count > 0) {
-            NSLog(@"[EVENT] Processed %d events in ui_select", event_count);
-        }
     }
 
-    // Don't force display here - let the 30 FPS timer handle all redraws to avoid race conditions
+    // Don't force display here - let the 60 FPS timer handle all redraws to avoid race conditions
 }
 
 void
@@ -714,7 +749,7 @@ RD_HBITMAP
 ui_create_bitmap(int width, int height, uint8 * data)
 {
     CGContextRef context = CGBitmapContextCreate(
-        data,                               // data
+        NULL,                               // data (let CG allocate it)
         width,                              // width  
         height,                             // height
         8,                                  // bitsPerComponent
@@ -722,6 +757,13 @@ ui_create_bitmap(int width, int height, uint8 * data)
         g_colorspace,                       // colorspace
         kCGImageAlphaNoneSkipLast           // bitmapInfo
     );
+    
+    if (context && data) {
+        void *dstData = CGBitmapContextGetData(context);
+        if (dstData) {
+            memcpy(dstData, data, width * height * 4);
+        }
+    }
     
     return (RD_HBITMAP)context;
 }
@@ -901,14 +943,112 @@ void ui_patblt(uint8 opcode, int x, int y, int cx, int cy, BRUSH * brush, uint32
         [g_view setNeedsDisplayInRect:NSMakeRect(x, y, cx, cy)];
     });
 }
-void ui_screenblt(uint8 opcode, int x, int y, int cx, int cy, int srcx, int srcy) {}
-void ui_memblt(uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy) {}
-void ui_triblt(uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy, BRUSH * brush, uint32 bgcolor, uint32 fgcolor) {}
-void ui_line(uint8 opcode, int startx, int starty, int endx, int endy, PEN * pen) {}
-void ui_rect(int x, int y, int cx, int cy, uint32 colour) {
-    NSLog(@"[macOS DEBUG] ui_rect: x=%d y=%d cx=%d cy=%d colour=0x%08x", x, y, cx, cy, colour);
+void ui_screenblt(uint8 opcode, int x, int y, int cx, int cy, int srcx, int srcy) {
+    (void)opcode;
     if (!g_view || !g_view.backingStore) {
-        NSLog(@"[macOS DEBUG] ui_rect: g_view or backingStore is NULL, returning");
+        return;
+    }
+
+    [g_view.backingStoreLock lock];
+
+    CGContextRef context = g_view.backingStore;
+
+    // Create a snapshot of the entire backing store
+    CGImageRef screenImage = CGBitmapContextCreateImage(context);
+    if (screenImage) {
+        // Crop the source rect (translating RDP top-left to CG bottom-left)
+        CGRect cropRect = CGRectMake(srcx, g_view.backingStoreSize.height - srcy - cy, cx, cy);
+        CGImageRef croppedImage = CGImageCreateWithImageInRect(screenImage, cropRect);
+
+        if (croppedImage) {
+            // Destination rect
+            CGRect destRect = CGRectMake(x, g_view.backingStoreSize.height - y - cy, cx, cy);
+
+            // Draw back into the context
+            CGContextDrawImage(context, destRect, croppedImage);
+
+            CGImageRelease(croppedImage);
+        }
+        CGImageRelease(screenImage);
+    }
+
+    g_view.needsRedraw = YES;
+    [g_view.backingStoreLock unlock];
+}
+
+void ui_memblt(uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy) {
+    (void)opcode;
+    if (!g_view || !g_view.backingStore || !src) {
+        return;
+    }
+
+    [g_view.backingStoreLock lock];
+
+    CGContextRef dstContext = g_view.backingStore;
+    CGContextRef srcContext = (CGContextRef)src;
+
+    // Create an image from the source context
+    CGImageRef srcImage = CGBitmapContextCreateImage(srcContext);
+    if (srcImage) {
+        size_t srcHeight = CGImageGetHeight(srcImage);
+
+        // Crop the source rect (translating RDP top-left to CG bottom-left)
+        CGRect cropRect = CGRectMake(srcx, srcHeight - srcy - cy, cx, cy);
+        CGImageRef croppedImage = CGImageCreateWithImageInRect(srcImage, cropRect);
+
+        if (croppedImage) {
+            // Destination rect in backingStore (bottom-left coordinate system)
+            CGRect destRect = CGRectMake(x, g_view.backingStoreSize.height - y - cy, cx, cy);
+
+            // Draw it
+            CGContextDrawImage(dstContext, destRect, croppedImage);
+
+            CGImageRelease(croppedImage);
+        }
+        CGImageRelease(srcImage);
+    }
+
+    g_view.needsRedraw = YES;
+    [g_view.backingStoreLock unlock];
+}
+
+void ui_triblt(uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy, BRUSH * brush, uint32 bgcolor, uint32 fgcolor) {
+    (void)brush; (void)bgcolor; (void)fgcolor;
+    ui_memblt(opcode, x, y, cx, cy, src, srcx, srcy);
+}
+
+void ui_line(uint8 opcode, int startx, int starty, int endx, int endy, PEN * pen) {
+    (void)opcode;
+    if (!g_view || !g_view.backingStore) {
+        return;
+    }
+
+    [g_view.backingStoreLock lock];
+
+    CGContextRef context = g_view.backingStore;
+
+    // Set line width
+    CGContextSetLineWidth(context, pen->width);
+
+    // Translate color
+    uint32 rgb_colour = translate_colour(pen->colour);
+    float r = ((rgb_colour >> 16) & 0xFF) / 255.0f;
+    float g = ((rgb_colour >> 8) & 0xFF) / 255.0f;
+    float b = (rgb_colour & 0xFF) / 255.0f;
+    float a = 1.0f;
+    CGContextSetRGBStrokeColor(context, r, g, b, a);
+
+    // Draw line
+    CGContextBeginPath(context);
+    CGContextMoveToPoint(context, startx, g_view.backingStoreSize.height - starty);
+    CGContextAddLineToPoint(context, endx, g_view.backingStoreSize.height - endy);
+    CGContextStrokePath(context);
+
+    g_view.needsRedraw = YES;
+    [g_view.backingStoreLock unlock];
+}
+void ui_rect(int x, int y, int cx, int cy, uint32 colour) {
+    if (!g_view || !g_view.backingStore) {
         return;
     }
 
@@ -929,18 +1069,16 @@ void ui_rect(int x, int y, int cx, int cy, uint32 colour) {
     CGContextSetRGBFillColor(context, r, g, b, a);
     CGContextFillRect(context, rect);
 
+    g_view.needsRedraw = YES;
     [g_view.backingStoreLock unlock];
-    // Display update will happen in ui_end_update()
 }
 void ui_polygon(uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints, BRUSH * brush, uint32 bgcolor, uint32 fgcolor) {}
 void ui_polyline(uint8 opcode, RD_POINT * points, int npoints, PEN * pen) {}
 void ui_ellipse(uint8 opcode, uint8 fillmode, int x, int y, int cx, int cy, BRUSH * brush, uint32 bgcolor, uint32 fgcolor) {}
 void ui_draw_glyph(int mixmode, int x, int y, int cx, int cy, RD_HGLYPH glyph, int srcx, int srcy, uint32 bgcolour, uint32 fgcolour) {
-    NSLog(@"[macOS DEBUG] ui_draw_glyph: mixmode=%d x=%d y=%d cx=%d cy=%d", mixmode, x, y, cx, cy);
     (void)srcx; (void)srcy;  // These are always 0
 
     if (!g_view || !g_view.backingStore || !glyph) {
-        NSLog(@"[macOS DEBUG] ui_draw_glyph: missing backing store or glyph");
         return;
     }
 
@@ -976,21 +1114,19 @@ void ui_draw_glyph(int mixmode, int x, int y, int cx, int cy, RD_HGLYPH glyph, i
     }
 
     // Draw the glyph using the mask
-    // The mask defines where the foreground color should be drawn
     CGContextSetRGBFillColor(context, fgR, fgG, fgB, 1.0f);
     CGContextClipToMask(context, rect, maskImage);
     CGContextFillRect(context, rect);
 
     CGContextRestoreGState(context);
 
+    g_view.needsRedraw = YES;
     [g_view.backingStoreLock unlock];
 }
 void ui_draw_text(uint8 font, uint8 flags, uint8 opcode, int mixmode, int x, int y, int clipx, int clipy, int clipcx, int clipcy, int boxx, int boxy, int boxcx, int boxcy, BRUSH * brush, uint32 bgcolor, uint32 fgcolor, uint8 * text, uint8 length) {
-    NSLog(@"[macOS DEBUG] ui_draw_text: font=%d flags=0x%02x x=%d y=%d length=%d", font, flags, x, y, length);
     (void)opcode; (void)brush;
 
     if (!g_view || !g_view.backingStore) {
-        NSLog(@"[macOS DEBUG] ui_draw_text: no backing store");
         return;
     }
 
@@ -1129,52 +1265,16 @@ void ui_draw_text(uint8 font, uint8 flags, uint8 opcode, int mixmode, int x, int
 }
 void ui_desktop_save(uint32 offset, int x, int y, int cx, int cy) {}
 void ui_desktop_restore(uint32 offset, int x, int y, int cx, int cy) {}
-static int g_screenshot_counter = 0;
+
 
 void ui_begin_update(void) {
-    NSLog(@"[macOS DEBUG] ui_begin_update() called");
 }
 
 void ui_end_update(void) {
-    if (!g_view || !g_view.backingStore) {
-        return;
-    }
-
-    if (![NSThread isMainThread]) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            ui_end_update();
-        });
-        return;
-    }
-
-    /* Save screenshot for debugging (only first 10 to avoid filling disk) */
-    /*
-    if (g_screenshot_counter < 10) {
-        g_screenshot_counter++;
-        NSString *desktopPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Desktop"];
-        NSString *filename = [NSString stringWithFormat:@"rdp_screenshot_%03d.png", g_screenshot_counter];
-        NSString *filepath = [desktopPath stringByAppendingPathComponent:filename];
-
-        CGImageRef image = CGBitmapContextCreateImage(g_view.backingStore);
-        if (image) {
-            NSURL *fileURL = [NSURL fileURLWithPath:filepath];
-            CGImageDestinationRef destination = CGImageDestinationCreateWithURL((CFURLRef)fileURL, kUTTypePNG, 1, NULL);
-            if (destination) {
-                CGImageDestinationAddImage(destination, image, NULL);
-                if (CGImageDestinationFinalize(destination)) {
-                    NSLog(@"[macOS DEBUG] Screenshot saved to: %@", filepath);
-                }
-                CFRelease(destination);
-            }
-            CGImageRelease(image);
-        }
-    }
-    */
-
-    // Force immediate display update for responsive UI
     if (g_view) {
-        [g_view setNeedsDisplay:YES];
-        [g_view displayIfNeeded];
+        [g_view.backingStoreLock lock];
+        g_view.needsRedraw = YES;
+        [g_view.backingStoreLock unlock];
     }
 }
 

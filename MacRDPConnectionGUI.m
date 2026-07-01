@@ -48,12 +48,13 @@ extern char g_keymapname[PATH_MAX];
 - (void)showConnectionWindow {
     if (!self.window) {
         // Create window programmatically - start with basic size
-        NSRect windowRect = NSMakeRect(0, 0, 550, 450);
+        NSRect windowRect = NSMakeRect(0, 0, 550, 480);
         NSWindow *window = [[NSWindow alloc] initWithContentRect:windowRect
                                                        styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable)
                                                          backing:NSBackingStoreBuffered
                                                            defer:NO];
         [window setDelegate:self];
+        [window setReleasedWhenClosed:NO];
         [self setWindow:window];
         
         // Create content view
@@ -101,7 +102,7 @@ extern char g_keymapname[PATH_MAX];
 }
 
 - (void)setupWindowControls:(NSView *)contentView {
-    CGFloat y = 400; // Start higher to accommodate advanced options
+    CGFloat y = 430; // Start higher to accommodate new password field
     CGFloat fieldHeight = 22;
     CGFloat labelWidth = 120;
     CGFloat fieldWidth = 200;
@@ -142,6 +143,20 @@ extern char g_keymapname[PATH_MAX];
     
     self.usernameField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth, fieldHeight)];
     [contentView addSubview:self.usernameField];
+    
+    y -= 35;
+    
+    // Password
+    NSTextField *passLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
+    [passLabel setStringValue:@"Password"];
+    [passLabel setBezeled:NO];
+    [passLabel setDrawsBackground:NO];
+    [passLabel setEditable:NO];
+    [passLabel setSelectable:NO];
+    [contentView addSubview:passLabel];
+    
+    self.passwordField = [[NSSecureTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth, fieldHeight)];
+    [contentView addSubview:self.passwordField];
     
     y -= 35;
     
@@ -250,19 +265,6 @@ extern char g_keymapname[PATH_MAX];
     [authLabel setSelectable:NO];
     [authLabel setFont:[NSFont boldSystemFontOfSize:13]];
     [self.advancedView addSubview:authLabel];
-    y -= 25;
-    
-    // Password field
-    NSTextField *passwordLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
-    [passwordLabel setStringValue:@"Password:"];
-    [passwordLabel setBezeled:NO];
-    [passwordLabel setDrawsBackground:NO];
-    [passwordLabel setEditable:NO];
-    [passwordLabel setSelectable:NO];
-    [self.advancedView addSubview:passwordLabel];
-    
-    self.passwordField = [[NSSecureTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth, fieldHeight)];
-    [self.advancedView addSubview:self.passwordField];
     y -= 25;
     
     // Client hostname

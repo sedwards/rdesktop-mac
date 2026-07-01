@@ -363,7 +363,7 @@ static char *subject[] = {
 };
 
 /* Changed from Warning to Debug to enable debug logging for connection troubleshooting */
-static log_level_t _logger_level = Debug;
+static log_level_t _logger_level = Warning;
 
 #define DEFAULT_LOGGER_SUBJECTS ((1 << Core) | (1 << RDP_Protocol))
 

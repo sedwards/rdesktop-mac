@@ -798,6 +798,14 @@ rdesktop_main(int argc, char *argv[])
 	g_nla_failure = False;
 	g_connection_established = False;
 
+	/* Reset getopt internal state for multiple calls (especially in GUI mode) */
+#ifdef __APPLE__
+	optind = 1;
+	optreset = 1;
+#else
+	optind = 0;
+#endif
+
 	/* setup debug logging from environment */
 	logger_set_subjects(getenv("RDESKTOP_DEBUG"));
 
@@ -1460,6 +1468,7 @@ rdesktop_main(int argc, char *argv[])
 
 		logger(Core, Verbose, "Disconnecting...");
 		rdp_disconnect();
+		g_connection_established = False;
 
 		/* Version <= Windows 2008 server have a different behaviour for
 		   user initiated disconnected. Lets translate this specific

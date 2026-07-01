@@ -83,6 +83,9 @@ int g_tcp_port_rdp = TCP_PORT_RDP;
 
 extern RD_BOOL g_exit_mainloop;
 extern RD_BOOL g_network_error;
+
+#include <pthread.h>
+static pthread_mutex_t g_tcp_mutex = PTHREAD_MUTEX_INITIALIZER;
 extern RD_BOOL g_reconnect_loop;
 extern char g_tls_version[];
 
@@ -192,7 +195,9 @@ tcp_send(STREAM s)
 		if (g_ssl_initialized) {
 #ifdef __APPLE__
 			size_t processed = 0;
+			pthread_mutex_lock(&g_tcp_mutex);
 			OSStatus status = SSLWrite(g_ssl_ctx, data, length, &processed);
+			pthread_mutex_unlock(&g_tcp_mutex);
 			if (status == noErr || status == errSSLWouldBlock) {
 				sent = processed;
 				if (status == errSSLWouldBlock && sent == 0) {
@@ -227,7 +232,9 @@ tcp_send(STREAM s)
 		}
 		else
 		{
+			pthread_mutex_lock(&g_tcp_mutex);
 			sent = send(g_sock, data, length, 0);
+			pthread_mutex_unlock(&g_tcp_mutex);
 			if (sent <= 0)
 			{
 				if (sent == -1 && TCP_BLOCKS)
@@ -311,7 +318,9 @@ tcp_recv(STREAM s, uint32 length)
 		if (g_ssl_initialized) {
 #ifdef __APPLE__
 			size_t processed = 0;
+			pthread_mutex_lock(&g_tcp_mutex);
 			OSStatus status = SSLRead(g_ssl_ctx, data, length, &processed);
+			pthread_mutex_unlock(&g_tcp_mutex);
 
 			if (status == noErr || status == errSSLWouldBlock) {
 				rcvd = processed;
@@ -329,7 +338,8 @@ tcp_recv(STREAM s, uint32 length)
 				g_network_error = True;
 				return NULL;
 			} else {
-				logger(Core, Error, "tcp_recv(): SSLRead() failed with status %d", (int)status);
+				logger(Core, Error, "tcp_recv(): SSLRead() failed with status %d (g_ssl_ctx=%p, data=%p, length=%u)", 
+					   (int)status, g_ssl_ctx, data, length);
 				g_network_error = True;
 				return NULL;
 			}
@@ -393,7 +403,9 @@ tcp_recv(STREAM s, uint32 length)
 		else
 		{
 			logger(Core, Debug, "tcp_recv(): calling recv() for %d bytes (non-SSL)...", length);
+			pthread_mutex_lock(&g_tcp_mutex);
 			rcvd = recv(g_sock, data, length, 0);
+			pthread_mutex_unlock(&g_tcp_mutex);
 			logger(Core, Debug, "tcp_recv(): recv() returned %d", rcvd);
 
 			if (rcvd < 0)
