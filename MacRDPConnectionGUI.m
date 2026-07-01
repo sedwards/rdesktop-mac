@@ -118,9 +118,12 @@ extern char g_keymapname[PATH_MAX];
     [hostLabel setSelectable:NO];
     [contentView addSubview:hostLabel];
     
-    self.hostField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth - 80, fieldHeight)];
-    [self.hostField setStringValue:@""];
+    self.hostField = [[NSComboBox alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth - 80, fieldHeight)];
+    [self.hostField setCompletes:YES];
+    [self.hostField setHasVerticalScroller:YES];
+    [self.hostField setDelegate:self];
     [contentView addSubview:self.hostField];
+    [self loadSavedProfiles];
     
     self.portField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth + fieldWidth - 75, y, 70, fieldHeight)];
     [self.portField setStringValue:@"3389"];
@@ -614,7 +617,7 @@ extern char g_keymapname[PATH_MAX];
     NSString *host = [self.hostField stringValue];
     NSString *port = [self.portField stringValue];
     NSString *username = [self.usernameField stringValue];
-    // NSString *domain = [self.domainField stringValue]; // Not used yet
+    NSString *domain = [self.domainField stringValue];
     NSString *width = [self.widthField stringValue];
     NSString *height = [self.heightField stringValue];
     NSString *keymap = [[self.keymapPopup selectedItem] title];
@@ -650,6 +653,9 @@ extern char g_keymapname[PATH_MAX];
     
     // Collect all advanced options for connection
     NSMutableDictionary *advancedOptions = [[NSMutableDictionary alloc] init];
+    if ([domain length] > 0) {
+        [advancedOptions setObject:domain forKey:@"domain"];
+    }
     
     // Password
     NSString *password = [self.passwordField stringValue];
@@ -789,12 +795,53 @@ extern char g_keymapname[PATH_MAX];
 }
 
 - (IBAction)addConnectionClicked:(id)sender {
-    // TODO: Implement saved connections functionality
-    NSAlert *alert = [[NSAlert alloc] init];
-    [alert setMessageText:@"Add Connection"];
-    [alert setInformativeText:@"Saved connections feature coming soon!"];
-    [alert setAlertStyle:NSAlertStyleInformational];
-    [alert runModal];
+    NSString *host = [self.hostField stringValue];
+    NSString *user = [self.usernameField stringValue];
+    NSString *port = [self.portField stringValue];
+    
+    if ([host length] == 0) {
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Error"];
+        [alert setInformativeText:@"Please enter a Host first."];
+        [alert setAlertStyle:NSAlertStyleWarning];
+        [alert runModal];
+        return;
+    }
+    
+    NSString *profile;
+    if ([user length] > 0) {
+        profile = [NSString stringWithFormat:@"%@@%@:%@", user, host, port];
+    } else {
+        profile = [NSString stringWithFormat:@"%@:%@", host, port];
+    }
+    
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSMutableArray *savedProfiles = [[defaults objectForKey:@"SavedProfiles"] mutableCopy];
+    if (!savedProfiles) {
+        savedProfiles = [[NSMutableArray alloc] init];
+    }
+    
+    if (![savedProfiles containsObject:profile]) {
+        [savedProfiles addObject:profile];
+        [defaults setObject:savedProfiles forKey:@"SavedProfiles"];
+        [defaults synchronize];
+        
+        [self loadSavedProfiles];
+        [self.hostField selectItemWithObjectValue:profile];
+        [self autofillFromProfile:profile];
+        
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Success"];
+        [alert setInformativeText:[NSString stringWithFormat:@"Saved connection profile: %@", profile]];
+        [alert setAlertStyle:NSAlertStyleInformational];
+        [alert runModal];
+    } else {
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Info"];
+        [alert setInformativeText:@"This connection profile is already saved."];
+        [alert setAlertStyle:NSAlertStyleInformational];
+        [alert runModal];
+    }
 }
 
 - (void)startConnection {
@@ -802,21 +849,32 @@ extern char g_keymapname[PATH_MAX];
     NSLog(@"Username: %s", g_username ? g_username : "(none)");
     NSLog(@"Resolution: %dx%d, Keymap: %s", g_requested_session_width, g_requested_session_height, g_keymapname);
     
+    self.isConnecting = YES;
+    
     // Launch the RDP connection in a separate thread to avoid blocking the GUI
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         extern int launch_rdp_connection_from_gui(void);
         int result = launch_rdp_connection_from_gui();
         
         dispatch_async(dispatch_get_main_queue(), ^{
+            self.isConnecting = NO;
             if (result != 0) {
-                NSAlert *alert = [[NSAlert alloc] init];
-                [alert setMessageText:@"Connection Failed"];
-                [alert setInformativeText:[NSString stringWithFormat:@"Could not connect to %s:%d", g_hostname, g_tcp_port_rdp]];
-                [alert setAlertStyle:NSAlertStyleCritical];
-                [alert runModal];
-                
-                // Show connection window again
+                // Force foreground focus
+                [NSApp activateIgnoringOtherApps:YES];
                 [[self window] makeKeyAndOrderFront:nil];
+                
+                extern RD_BOOL g_nla_failure;
+                extern RD_BOOL g_connection_established;
+                if (g_nla_failure && !g_connection_established) {
+                    extern void show_nla_instructions_alert(void);
+                    show_nla_instructions_alert();
+                } else {
+                    NSAlert *alert = [[NSAlert alloc] init];
+                    [alert setMessageText:@"Connection Failed"];
+                    [alert setInformativeText:[NSString stringWithFormat:@"Could not connect to %s:%d", g_hostname, g_tcp_port_rdp]];
+                    [alert setAlertStyle:NSAlertStyleCritical];
+                    [alert runModal];
+                }
             }
         });
     });
@@ -824,6 +882,131 @@ extern char g_keymapname[PATH_MAX];
 
 - (void)windowWillClose:(NSNotification *)notification {
     [NSApp terminate:self];
+}
+
+#pragma mark - Menu Actions
+
+- (IBAction)showConnectionWindow:(id)sender {
+    [self showConnectionWindow];
+}
+
+- (IBAction)showSettings:(id)sender {
+    [self showConnectionWindow];
+    if (!self.advancedVisible) {
+        [self toggleAdvancedOptions];
+    }
+    [[self window] makeKeyAndOrderFront:nil];
+}
+
+- (IBAction)disconnect:(id)sender {
+    extern int g_exit_mainloop;
+    g_exit_mainloop = 1;
+}
+
+- (void)toggleFullscreenSetting:(id)sender {
+    NSControlStateValue state = [self.fullscreenButton state];
+    [self.fullscreenButton setState:(state == NSControlStateValueOn ? NSControlStateValueOff : NSControlStateValueOn)];
+}
+
+- (void)toggleCompressionSetting:(id)sender {
+    NSControlStateValue state = [self.compressionButton state];
+    [self.compressionButton setState:(state == NSControlStateValueOn ? NSControlStateValueOff : NSControlStateValueOn)];
+}
+
+- (void)togglePersistentCachingSetting:(id)sender {
+    NSControlStateValue state = [self.persistentCachingButton state];
+    [self.persistentCachingButton setState:(state == NSControlStateValueOn ? NSControlStateValueOff : NSControlStateValueOn)];
+}
+
+- (void)toggleLocalMouseCursorSetting:(id)sender {
+    NSControlStateValue state = [self.localMouseCursorButton state];
+    [self.localMouseCursorButton setState:(state == NSControlStateValueOn ? NSControlStateValueOff : NSControlStateValueOn)];
+}
+
+- (void)toggleConsoleSetting:(id)sender {
+    NSControlStateValue state = [self.consoleButton state];
+    [self.consoleButton setState:(state == NSControlStateValueOn ? NSControlStateValueOff : NSControlStateValueOn)];
+}
+
+- (void)toggleVerboseLoggingSetting:(id)sender {
+    NSControlStateValue state = [self.verboseLoggingButton state];
+    [self.verboseLoggingButton setState:(state == NSControlStateValueOn ? NSControlStateValueOff : NSControlStateValueOn)];
+}
+
+#pragma mark - Menu Item Validation
+
+- (BOOL)validateMenuItem:(NSMenuItem *)menuItem {
+    SEL action = [menuItem action];
+    if (action == @selector(disconnect:)) {
+        return self.isConnecting;
+    }
+    if (action == @selector(toggleFullscreenSetting:)) {
+        [menuItem setState:[self.fullscreenButton state]];
+        return YES;
+    }
+    if (action == @selector(toggleCompressionSetting:)) {
+        [menuItem setState:[self.compressionButton state]];
+        return YES;
+    }
+    if (action == @selector(togglePersistentCachingSetting:)) {
+        [menuItem setState:[self.persistentCachingButton state]];
+        return YES;
+    }
+    if (action == @selector(toggleLocalMouseCursorSetting:)) {
+        [menuItem setState:[self.localMouseCursorButton state]];
+        return YES;
+    }
+    if (action == @selector(toggleConsoleSetting:)) {
+        [menuItem setState:[self.consoleButton state]];
+        return YES;
+    }
+    if (action == @selector(toggleVerboseLoggingSetting:)) {
+        [menuItem setState:[self.verboseLoggingButton state]];
+        return YES;
+    }
+    return YES;
+}
+
+- (void)loadSavedProfiles {
+    NSArray *savedProfiles = [[NSUserDefaults standardUserDefaults] objectForKey:@"SavedProfiles"];
+    [self.hostField removeAllItems];
+    if (savedProfiles) {
+        [self.hostField addItemsWithObjectValues:savedProfiles];
+    }
+}
+
+- (void)autofillFromProfile:(NSString *)profile {
+    if (!profile || [profile length] == 0) return;
+    
+    NSString *user = @"";
+    NSString *host = profile;
+    NSString *port = @"3389";
+    
+    NSRange atRange = [profile rangeOfString:@"@"];
+    if (atRange.location != NSNotFound) {
+        user = [profile substringToIndex:atRange.location];
+        host = [profile substringFromIndex:atRange.location + 1];
+    }
+    
+    NSRange colonRange = [host rangeOfString:@":"];
+    if (colonRange.location != NSNotFound) {
+        port = [host substringFromIndex:colonRange.location + 1];
+        host = [host substringToIndex:colonRange.location];
+    }
+    
+    [self.hostField setStringValue:host];
+    [self.usernameField setStringValue:user];
+    [self.portField setStringValue:port];
+}
+
+- (void)comboBoxSelectionDidChange:(NSNotification *)notification {
+    if (notification.object == self.hostField) {
+        NSInteger index = [self.hostField indexOfSelectedItem];
+        if (index >= 0) {
+            NSString *profile = [self.hostField itemObjectValueAtIndex:index];
+            [self autofillFromProfile:profile];
+        }
+    }
 }
 
 @end

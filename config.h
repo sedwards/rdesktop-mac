@@ -137,7 +137,7 @@
 #define HAVE_UNISTD_H 1
 
 /* Define as const if the declaration of iconv() needs const. */
-#define ICONV_CONST 
+#define ICONV_CONST
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #define LT_OBJDIR ".libs/"
@@ -218,13 +218,13 @@
 /* #undef WITH_PCSC120 */
 
 /* Define to 1 if PnP notifications are supported */
-#define WITH_PNP_NOTIFICATIONS 1
+/* #undef WITH_PNP_NOTIFICATIONS */
 
 /* Define to 1 if sound support is enabled */
 /* #undef WITH_RDPSND */
 
 /* Define to 1 if smartcard support is enabled */
-#define WITH_SCARD 1
+/* #undef WITH_SCARD */
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

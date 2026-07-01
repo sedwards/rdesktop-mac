@@ -315,8 +315,12 @@ iso_connect(char *server, char *username, char *domain, char *password,
 					reason = "SSL required by server";
 					break;
 				case HYBRID_REQUIRED_BY_SERVER:
-					reason = get_credSSP_reason(neg_proto);
-					break;
+					{
+						extern RD_BOOL g_nla_failure;
+						g_nla_failure = True;
+						reason = get_credSSP_reason(neg_proto);
+						break;
+					}
 				default:
 					reason = "unknown reason";
 			}
@@ -371,6 +375,8 @@ iso_connect(char *server, char *username, char *domain, char *password,
 			if (!cssp_connect(server, username, domain, password, s))
 			{
 				/* failed to connect using cssp, let retry with plain TLS */
+				extern RD_BOOL g_nla_failure;
+				g_nla_failure = True;
 				logger(Core, Verbose,
 				       "Failed to connect using NLA, trying with SSL");
 				tcp_disconnect();

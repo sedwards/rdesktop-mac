@@ -35,7 +35,14 @@ X_EXTRA_LIBS=""
 AC_PATH_TOOL(PKG_CONFIG, pkg-config)
 
 # no .pc for GMP
-AC_SEARCH_LIBS([__gmpz_init], [gmp])
+case "$host" in
+    *-*-darwin*)
+        # Bypass GMP check on macOS
+        ;;
+    *)
+        AC_SEARCH_LIBS([__gmpz_init], [gmp])
+        ;;
+esac
 
 AC_SEARCH_LIBS(socket, socket)
 AC_SEARCH_LIBS(inet_aton, resolv)
@@ -73,8 +80,8 @@ AC_ARG_ENABLE([address-sanitizer], AS_HELP_STRING([--enable-address-sanitizer], 
 dnl CredSSP feature
 AC_ARG_ENABLE([credssp], AS_HELP_STRING([--disable-credssp], [disable support for CredSSP]))
 AS_IF([test "x$enable_credssp" != "xno"], [
-	case "$OSTYPE" in
-	     darwin*)
+	case "$host" in
+	     *-*-darwin*)
 		AC_CHECK_HEADER(Kerberos/gssapi_krb5.h, [WITH_CREDSSP=1], [WITH_CREDSSP=0])
 		GSSAPI_CFLAGS=""
 		GSSAPI_LIBS="-framework Kerberos"
@@ -125,61 +132,88 @@ dnl PKG_CHECK_MODULES(XCURSOR, xcursor, [HAVE_XCURSOR=1], [HAVE_XCURSOR=0])
 HAVE_XCURSOR=0
 
 # libtasn1
-if test -n "$PKG_CONFIG"; then
-    PKG_CHECK_MODULES(LIBTASN1, libtasn1, [HAVE_LIBTASN1=1], [HAVE_LIBTASN1=0])
-fi
-if test x"$HAVE_LIBTASN1" = "x1"; then
-    CFLAGS="$CFLAGS $LIBTASN1_CFLAGS"
-    LIBS="$LIBS $LIBTASN1_LIBS"
-else
-	   echo
-	   echo "rdesktop requires libtasn1. Please install the dependency"
-	   echo
-	   exit 1
-fi
+case "$host" in
+    *-*-darwin*)
+        HAVE_LIBTASN1=1
+        ;;
+    *)
+        if test -n "$PKG_CONFIG"; then
+            PKG_CHECK_MODULES(LIBTASN1, libtasn1, [HAVE_LIBTASN1=1], [HAVE_LIBTASN1=0])
+        fi
+        if test x"$HAVE_LIBTASN1" = "x1"; then
+            CFLAGS="$CFLAGS $LIBTASN1_CFLAGS"
+            LIBS="$LIBS $LIBTASN1_LIBS"
+        else
+            echo
+            echo "rdesktop requires libtasn1. Please install the dependency"
+            echo
+            exit 1
+        fi
+        ;;
+esac
 
 # nettle
-if test -n "$PKG_CONFIG"; then
-    PKG_CHECK_MODULES(NETTLE, nettle, [HAVE_NETTLE=1], [HAVE_NETTLE=0])
-fi
-if test x"$HAVE_NETTLE" = "x1"; then
-    CFLAGS="$CFLAGS $NETTLE_CFLAGS"
-    LIBS="$LIBS $NETTLE_LIBS"
-else
-	   echo
-	   echo "rdesktop requires Nettle. Please install the dependency"
-	   echo
-	   exit 1
-fi
+case "$host" in
+    *-*-darwin*)
+        HAVE_NETTLE=1
+        ;;
+    *)
+        if test -n "$PKG_CONFIG"; then
+            PKG_CHECK_MODULES(NETTLE, nettle, [HAVE_NETTLE=1], [HAVE_NETTLE=0])
+        fi
+        if test x"$HAVE_NETTLE" = "x1"; then
+            CFLAGS="$CFLAGS $NETTLE_CFLAGS"
+            LIBS="$LIBS $NETTLE_LIBS"
+        else
+            echo
+            echo "rdesktop requires Nettle. Please install the dependency"
+            echo
+            exit 1
+        fi
+        ;;
+esac
 
 # hogweed
-if test -n "$PKG_CONFIG"; then
-    PKG_CHECK_MODULES(HOGWEED, hogweed, [HAVE_HOGWEED=1], [HAVE_HOGWEED=0])
-fi
-if test x"$HAVE_HOGWEED" = "x1"; then
-    CFLAGS="$CFLAGS $HOGWEED_CFLAGS"
-    LIBS="$LIBS $HOGWEED_LIBS"
-else
-	   echo
-	   echo "rdesktop requires hogweed. Please install the dependency"
-	   echo
-	   exit 1
-fi
+case "$host" in
+    *-*-darwin*)
+        HAVE_HOGWEED=1
+        ;;
+    *)
+        if test -n "$PKG_CONFIG"; then
+            PKG_CHECK_MODULES(HOGWEED, hogweed, [HAVE_HOGWEED=1], [HAVE_HOGWEED=0])
+        fi
+        if test x"$HAVE_HOGWEED" = "x1"; then
+            CFLAGS="$CFLAGS $HOGWEED_CFLAGS"
+            LIBS="$LIBS $HOGWEED_LIBS"
+        else
+            echo
+            echo "rdesktop requires hogweed. Please install the dependency"
+            echo
+            exit 1
+        fi
+        ;;
+esac
 
 # GnuTLS
-
-if test -n "$PKG_CONFIG"; then
-    PKG_CHECK_MODULES(GNUTLS, gnutls >= 3.2.0, [HAVE_GNUTLS=1], [HAVE_GNUTLS=0])
-fi
-if test x"$HAVE_GNUTLS" = "x1"; then
-    CFLAGS="$CFLAGS $GNUTLS_CFLAGS"
-    LIBS="$LIBS $GNUTLS_LIBS"
-else
-	   echo
-	   echo "rdesktop requires GnuTLS. Please install the dependency"
-	   echo
-	   exit 1
-fi
+case "$host" in
+    *-*-darwin*)
+        HAVE_GNUTLS=1
+        ;;
+    *)
+        if test -n "$PKG_CONFIG"; then
+            PKG_CHECK_MODULES(GNUTLS, gnutls >= 3.2.0, [HAVE_GNUTLS=1], [HAVE_GNUTLS=0])
+        fi
+        if test x"$HAVE_GNUTLS" = "x1"; then
+            CFLAGS="$CFLAGS $GNUTLS_CFLAGS"
+            LIBS="$LIBS $GNUTLS_LIBS"
+        else
+            echo
+            echo "rdesktop requires GnuTLS. Please install the dependency"
+            echo
+            exit 1
+        fi
+        ;;
+esac
 
 dnl Smartcard support
 AC_ARG_ENABLE(smartcard, AS_HELP_STRING([--disable-smartcard], [disable support for smartcard]))

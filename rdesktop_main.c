@@ -93,6 +93,8 @@ extern int g_tcp_port_rdp;
 int g_server_depth = -1;
 int g_win_button_size = 0;	/* If zero, disable single app mode */
 RD_BOOL g_network_error = False;
+RD_BOOL g_nla_failure = False;
+RD_BOOL g_connection_established = False;
 RD_BOOL g_sendmotion = True;
 RD_BOOL g_bitmap_cache = True;
 RD_BOOL g_bitmap_cache_persist_enable = False;
@@ -792,6 +794,10 @@ rdesktop_main(int argc, char *argv[])
 	char *rdpsnd_optarg = NULL;
 #endif
 
+	/* Reset connection status flags for multiple connection attempts in GUI mode */
+	g_nla_failure = False;
+	g_connection_established = False;
+
 	/* setup debug logging from environment */
 	logger_set_subjects(getenv("RDESKTOP_DEBUG"));
 
@@ -1430,6 +1436,7 @@ rdesktop_main(int argc, char *argv[])
 			g_encryption_initial = g_encryption = False;
 
 		logger(Core, Verbose, "Connection successful");
+		g_connection_established = True;
 		logger(Core, Debug, "======== CONNECTION ESTABLISHED ========");
 		logger(Core, Debug, "Successfully connected to %s", server);
 		logger(Core, Debug, "Window already exists, starting UI event loop...");

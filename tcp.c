@@ -570,7 +570,7 @@ tcp_tls_connect(void)
 			default: break;
 		}
 		logger(Core, Verbose, "TLS Session info: %s (Secure Transport)\n", version_str);
-		snprintf(g_tls_version, 32, "%s", version_str);
+		/* Do not overwrite g_tls_version option to avoid buffer overflow and retain retry settings */
 	}
 
 	logger(Core, Debug, "tcp_tls_connect(), connection established successfully");
@@ -676,8 +676,7 @@ fail:
 		const char *version = SSL_get_version(g_ssl);
 		const char *cipher = SSL_get_cipher(g_ssl);
 		logger(Core, Verbose, "TLS  Session info: %s-%s (stub)\n", version, cipher);
-		/* g_tls_version is an extern array, use reasonable buffer size */
-		snprintf(g_tls_version, 32, "%s", version);
+		/* Do not overwrite g_tls_version option to avoid buffer overflow and retain retry settings */
 	}
 
 	logger(Core, Debug, "tcp_tls_connect(), connection established successfully");

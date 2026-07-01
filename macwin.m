@@ -430,10 +430,20 @@ mac_fatal(char *format, ...)
 RD_BOOL
 ui_init(void)
 {
+    if (![NSThread isMainThread]) {
+        __block RD_BOOL result = False;
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            result = ui_init();
+        });
+        return result;
+    }
+
     NSLog(@"[macOS DEBUG] ui_init() ENTER");
 
     g_app = [NSApplication sharedApplication];
     [g_app setActivationPolicy:NSApplicationActivationPolicyRegular];
+    [g_app finishLaunching];
+    [g_app activateIgnoringOtherApps:YES];
 
     NSLog(@"[macOS DEBUG] NSApplication initialized successfully");
 
@@ -489,6 +499,13 @@ ui_deinit(void)
 void
 ui_update_window_sizehints(uint32 width, uint32 height)
 {
+    if (![NSThread isMainThread]) {
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            ui_update_window_sizehints(width, height);
+        });
+        return;
+    }
+
     if (g_window) {
         NSSize minSize = NSMakeSize(width, height);
         [g_window setContentMinSize:minSize];
@@ -498,6 +515,14 @@ ui_update_window_sizehints(uint32 width, uint32 height)
 RD_BOOL
 ui_create_window(uint32 width, uint32 height)
 {
+    if (![NSThread isMainThread]) {
+        __block RD_BOOL result = False;
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            result = ui_create_window(width, height);
+        });
+        return result;
+    }
+
     NSLog(@"========================================");
     NSLog(@"[macOS DEBUG] ui_create_window() ENTER");
     NSLog(@"[macOS DEBUG] Requested dimensions: %u x %u", width, height);
@@ -594,6 +619,13 @@ ui_create_window(uint32 width, uint32 height)
 void
 ui_resize_window(uint32 width, uint32 height)
 {
+    if (![NSThread isMainThread]) {
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            ui_resize_window(width, height);
+        });
+        return;
+    }
+
     if (g_window && g_view) {
         g_width = width;
         g_height = height;
@@ -613,7 +645,15 @@ ui_have_window(void)
 void
 ui_destroy_window(void)
 {
+    if (![NSThread isMainThread]) {
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            ui_destroy_window();
+        });
+        return;
+    }
+
     if (g_window) {
+        [g_window setDelegate:nil];
         [g_window close];
         g_window = nil;
         g_view = nil;
@@ -636,26 +676,28 @@ ui_select(int rdp_socket)
     retval = select(rdp_socket + 1, &rfds, NULL, NULL, &tv);
     (void)retval; // Suppress unused variable warning
 
-    // Process Cocoa events synchronously (we're already on main thread)
-    int event_count = 0;
-    NSEvent *event;
-    while ((event = [g_app nextEventMatchingMask:NSEventMaskAny
-                                        untilDate:[NSDate distantPast]
-                                           inMode:NSDefaultRunLoopMode
-                                          dequeue:YES]))
-    {
-        event_count++;
-        NSEventType type = [event type];
-        if (type == NSEventTypeLeftMouseDown || type == NSEventTypeLeftMouseUp ||
-            type == NSEventTypeRightMouseDown || type == NSEventTypeRightMouseUp ||
-            type == NSEventTypeMouseMoved || type == NSEventTypeLeftMouseDragged) {
-            NSLog(@"[EVENT] Processing mouse event type=%ld", (long)type);
+    // Process Cocoa events synchronously (only if we're on the main thread)
+    if ([NSThread isMainThread]) {
+        int event_count = 0;
+        NSEvent *event;
+        while ((event = [g_app nextEventMatchingMask:NSEventMaskAny
+                                            untilDate:[NSDate distantPast]
+                                               inMode:NSDefaultRunLoopMode
+                                              dequeue:YES]))
+        {
+            event_count++;
+            NSEventType type = [event type];
+            if (type == NSEventTypeLeftMouseDown || type == NSEventTypeLeftMouseUp ||
+                type == NSEventTypeRightMouseDown || type == NSEventTypeRightMouseUp ||
+                type == NSEventTypeMouseMoved || type == NSEventTypeLeftMouseDragged) {
+                NSLog(@"[EVENT] Processing mouse event type=%ld", (long)type);
+            }
+            [g_app sendEvent:event];
+            [g_app updateWindows];
         }
-        [g_app sendEvent:event];
-        [g_app updateWindows];
-    }
-    if (event_count > 0) {
-        NSLog(@"[EVENT] Processed %d events in ui_select", event_count);
+        if (event_count > 0) {
+            NSLog(@"[EVENT] Processed %d events in ui_select", event_count);
+        }
     }
 
     // Don't force display here - let the 30 FPS timer handle all redraws to avoid race conditions
@@ -1098,6 +1140,13 @@ void ui_end_update(void) {
         return;
     }
 
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            ui_end_update();
+        });
+        return;
+    }
+
     /* Save screenshot for debugging (only first 10 to avoid filling disk) */
     /*
     if (g_screenshot_counter < 10) {
@@ -1123,7 +1172,6 @@ void ui_end_update(void) {
     */
 
     // Force immediate display update for responsive UI
-    // This is safe because ui_end_update is called from the main thread
     if (g_view) {
         [g_view setNeedsDisplay:YES];
         [g_view displayIfNeeded];
@@ -1151,3 +1199,32 @@ void ui_seamless_ack(unsigned int serial) {}
 /* Global variables for dynamic session management */
 RD_BOOL g_dynamic_session_resize = False;
 uint32 g_wait_for_deactivate_ts = 0;
+
+void show_nla_instructions_alert(void) {
+    if (![NSThread isMainThread]) {
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            show_nla_instructions_alert();
+        });
+        return;
+    }
+    
+    [NSApp activateIgnoringOtherApps:YES];
+    
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert setMessageText:@"Network Level Authentication (NLA) Error"];
+    
+    NSString *infoText = 
+        @"Connection failed because the Remote Desktop server requires Network Level Authentication (NLA).\n\n"
+        @"Because rdesktop uses the system GSSAPI (Kerberos) for NLA, it cannot authenticate standalone Windows machines using NTLMv2 natively.\n\n"
+        @"To resolve this on your standalone Windows 11 VM:\n"
+        @"1. Open Settings in the Windows VM.\n"
+        @"2. Go to System > Remote Desktop.\n"
+        @"3. Expand the Remote Desktop settings options.\n"
+        @"4. Uncheck 'Require devices to use Network Level Authentication to connect (Recommended)'.\n"
+        @"5. Click Confirm, then try connecting again.";
+        
+    [alert setInformativeText:infoText];
+    [alert setAlertStyle:NSAlertStyleWarning];
+    [alert addButtonWithTitle:@"OK"];
+    [alert runModal];
+}

@@ -19,10 +19,10 @@
 
 #import <Cocoa/Cocoa.h>
 
-@interface MacRDPConnectionGUI : NSWindowController <NSWindowDelegate>
+@interface MacRDPConnectionGUI : NSWindowController <NSWindowDelegate, NSComboBoxDelegate>
 
 // Basic connection fields
-@property (retain) IBOutlet NSTextField *hostField;
+@property (retain) IBOutlet NSComboBox *hostField;
 @property (retain) IBOutlet NSTextField *portField;
 @property (retain) IBOutlet NSTextField *usernameField;
 @property (retain) IBOutlet NSTextField *domainField;
@@ -86,5 +86,17 @@
 - (void)showConnectionWindow;
 - (void)startConnection;
 - (void)toggleAdvancedOptions;
+
+// Menu actions
+@property (assign) BOOL isConnecting;
+- (IBAction)showConnectionWindow:(id)sender;
+- (IBAction)showSettings:(id)sender;
+- (IBAction)disconnect:(id)sender;
+- (void)toggleFullscreenSetting:(id)sender;
+- (void)toggleCompressionSetting:(id)sender;
+- (void)togglePersistentCachingSetting:(id)sender;
+- (void)toggleLocalMouseCursorSetting:(id)sender;
+- (void)toggleConsoleSetting:(id)sender;
+- (void)toggleVerboseLoggingSetting:(id)sender;
 
 @end

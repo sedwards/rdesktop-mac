@@ -13,6 +13,7 @@ extern int rdesktop_main(int argc, char *argv[]);
 
 @interface MacRDPAppDelegate : NSObject <NSApplicationDelegate>
 @property (strong) MacRDPConnectionGUI *connectionGUI;
+- (void)setupMenuBar;
 @end
 
 @implementation MacRDPAppDelegate
@@ -20,7 +21,94 @@ extern int rdesktop_main(int argc, char *argv[]);
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     // Initialize connection GUI
     self.connectionGUI = [[MacRDPConnectionGUI alloc] init];
+    [self setupMenuBar];
     [self.connectionGUI showConnectionWindow];
+}
+
+- (void)setupMenuBar {
+    NSMenu *mainMenu = [[NSMenu alloc] init];
+    
+    // Application (Apple) Menu
+    NSMenuItem *appMenuItem = [[NSMenuItem alloc] init];
+    [mainMenu addItem:appMenuItem];
+    NSMenu *appMenu = [[NSMenu alloc] init];
+    NSString *appName = @"rdesktop-mac";
+    
+    // About
+    NSMenuItem *aboutMenuItem = [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"About %@", appName]
+                                                           action:@selector(orderFrontStandardAboutPanel:)
+                                                    keyEquivalent:@""];
+    [appMenu addItem:aboutMenuItem];
+    [appMenu addItem:[NSMenuItem separatorItem]];
+    
+    // Settings...
+    NSMenuItem *settingsMenuItem = [[NSMenuItem alloc] initWithTitle:@"Settings..."
+                                                             action:@selector(showSettings:)
+                                                      keyEquivalent:@","];
+    [settingsMenuItem setTarget:self.connectionGUI];
+    [appMenu addItem:settingsMenuItem];
+    [appMenu addItem:[NSMenuItem separatorItem]];
+    
+    // Hide/Hide Others/Show All/Quit
+    [appMenu addItem:[[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"Hide %@", appName] action:@selector(hide:) keyEquivalent:@"h"]];
+    
+    NSMenuItem *hideOthersItem = [[NSMenuItem alloc] initWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"h"];
+    [hideOthersItem setKeyEquivalentModifierMask:(NSEventModifierFlagOption | NSEventModifierFlagCommand)];
+    [appMenu addItem:hideOthersItem];
+    
+    [appMenu addItem:[[NSMenuItem alloc] initWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""]];
+    [appMenu addItem:[NSMenuItem separatorItem]];
+    
+    NSMenuItem *quitMenuItem = [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"Quit %@", appName] action:@selector(terminate:) keyEquivalent:@"q"];
+    [appMenu addItem:quitMenuItem];
+    [appMenuItem setSubmenu:appMenu];
+    
+    // Connection Menu
+    NSMenuItem *connMenuItem = [[NSMenuItem alloc] init];
+    [mainMenu addItem:connMenuItem];
+    NSMenu *connMenu = [[NSMenu alloc] initWithTitle:@"Connection"];
+    
+    NSMenuItem *connectItem = [[NSMenuItem alloc] initWithTitle:@"Connect..." action:@selector(showConnectionWindow:) keyEquivalent:@"n"];
+    [connectItem setTarget:self.connectionGUI];
+    [connMenu addItem:connectItem];
+    
+    NSMenuItem *disconnectItem = [[NSMenuItem alloc] initWithTitle:@"Disconnect" action:@selector(disconnect:) keyEquivalent:@"d"];
+    [disconnectItem setTarget:self.connectionGUI];
+    [connMenu addItem:disconnectItem];
+    
+    [connMenuItem setSubmenu:connMenu];
+    
+    // Settings Menu
+    NSMenuItem *settingsMenuParentItem = [[NSMenuItem alloc] init];
+    [mainMenu addItem:settingsMenuParentItem];
+    NSMenu *settingsMenu = [[NSMenu alloc] initWithTitle:@"Settings"];
+    
+    NSMenuItem *showSettingsItem = [[NSMenuItem alloc] initWithTitle:@"Show All Settings" action:@selector(showSettings:) keyEquivalent:@""];
+    [showSettingsItem setTarget:self.connectionGUI];
+    [settingsMenu addItem:showSettingsItem];
+    [settingsMenu addItem:[NSMenuItem separatorItem]];
+    
+    // Quick toggles
+    NSArray *toggles = @[
+        @{@"title": @"Full-screen Mode", @"action": @"toggleFullscreenSetting:"},
+        @{@"title": @"Enable RDP Compression", @"action": @"toggleCompressionSetting:"},
+        @{@"title": @"Persistent Bitmap Caching", @"action": @"togglePersistentCachingSetting:"},
+        @{@"title": @"Use Local Mouse Cursor", @"action": @"toggleLocalMouseCursorSetting:"},
+        @{@"title": @"Attach to Console", @"action": @"toggleConsoleSetting:"},
+        @{@"title": @"Verbose Logging", @"action": @"toggleVerboseLoggingSetting:"}
+    ];
+    
+    for (NSDictionary *toggle in toggles) {
+        NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:toggle[@"title"]
+                                                      action:NSSelectorFromString(toggle[@"action"])
+                                               keyEquivalent:@""];
+        [item setTarget:self.connectionGUI];
+        [settingsMenu addItem:item];
+    }
+    
+    [settingsMenuParentItem setSubmenu:settingsMenu];
+    
+    [NSApp setMainMenu:mainMenu];
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender {
@@ -50,6 +138,7 @@ int main(int argc, char *argv[]) {
             // Run macOS GUI application
             NSApplication *app = [NSApplication sharedApplication];
             [app setActivationPolicy:NSApplicationActivationPolicyRegular];
+            [app activateIgnoringOtherApps:YES];
             
             MacRDPAppDelegate *delegate = [[MacRDPAppDelegate alloc] init];
             [app setDelegate:delegate];
@@ -58,7 +147,14 @@ int main(int argc, char *argv[]) {
             return 0;
         } else {
             // Run traditional command-line rdesktop
-            return rdesktop_main(argc, argv);
+            int result = rdesktop_main(argc, argv);
+            extern RD_BOOL g_nla_failure;
+            extern RD_BOOL g_connection_established;
+            if (result != 0 && g_nla_failure && !g_connection_established) {
+                extern void show_nla_instructions_alert(void);
+                show_nla_instructions_alert();
+            }
+            return result;
         }
     }
 }
@@ -124,6 +220,13 @@ int launch_rdp_connection_from_gui(void) {
     
     // Process advanced options if available
     if (g_advanced_options) {
+        // Domain
+        NSString *domain = [g_advanced_options objectForKey:@"domain"];
+        if (domain && [domain length] > 0) {
+            fake_argv[fake_argc++] = "-d";
+            fake_argv[fake_argc++] = (char *)[domain UTF8String];
+        }
+        
         // Password
         NSString *password = [g_advanced_options objectForKey:@"password"];
         if (password && [password length] > 0) {

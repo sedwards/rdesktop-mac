@@ -16,8 +16,8 @@ KEYMAP_PATH = $(datadir)/rdesktop/keymaps/
 
 CC          = @CC@
 INSTALL     = @INSTALL@
-CFLAGS      = @CFLAGS@ @DEFS@ -I/opt/homebrew/opt/gmp/include -DKEYMAP_PATH=\"$(KEYMAP_PATH)\"
-LDFLAGS     = @LDFLAGS@ @LIBS@ -L/opt/homebrew/opt/gmp/lib -lgmp
+CFLAGS      = @CFLAGS@ @DEFS@ -DKEYMAP_PATH=\"$(KEYMAP_PATH)\"
+LDFLAGS     = @LDFLAGS@ @LIBS@
 STRIP       = @STRIP@
 
 TARGETS     = rdesktop-mac
@@ -61,7 +61,8 @@ installkeymaps:
 
 .PHONY: clean
 clean:
-	rm -f *.o *~ rdesktop-mac
+	rm -f *.o *~ rdesktop-mac rdesktop
+	rm -rf 3rdparty/*.o 3rdparty/*/*.o 3rdparty/*/*.a 3rdparty/*/*.la
 
 .PHONY: distclean
 distclean: clean

@@ -22,7 +22,6 @@ glibtoolize
 # Configure with minimal options for macOS
 echo "Running configure with macOS-optimized settings..."
 ./configure \
-    --disable-credssp \
     --disable-smartcard \
     --with-sound=no \
     --without-x \
@@ -35,4 +34,4 @@ echo "Building rdesktop..."
 make clean
 make -j$(sysctl -n hw.ncpu)
 
-echo "Build complete. Binary available at ./rdesktop"
+echo "Build complete. Binary available at ./rdesktop-mac"
