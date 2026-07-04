@@ -137,7 +137,7 @@ extern uint32 g_rdp_shareid;
 uint16 g_width = 800;
 uint16 g_height = 600;
 extern int g_server_depth;  // Defined in rdesktop_main.c
-extern uint8 mac_keycode_to_scancode(uint16 keycode);
+extern uint16 mac_keycode_to_scancode(uint16 keycode);
 
 
 /* Thread-safe UI dispatch macro */
@@ -357,14 +357,18 @@ mac_fatal(char *format, ...)
 - (void)keyDown:(NSEvent *)event {
     // Convert NSEvent to RDP key event
     uint16 keycode = [event keyCode];
-    uint8 scancode = mac_keycode_to_scancode(keycode);
-    queue_input_event(EVENT_KEY, [event timestamp] * 1000, RDP_KEYPRESS, scancode, 0);
+    uint16 scancode_with_flags = mac_keycode_to_scancode(keycode);
+    uint8 scancode = scancode_with_flags & 0xFF;
+    uint16 flags = RDP_KEYPRESS | (scancode_with_flags & 0xFF00);
+    queue_input_event(EVENT_KEY, [event timestamp] * 1000, flags, scancode, 0);
 }
 
 - (void)keyUp:(NSEvent *)event {
     uint16 keycode = [event keyCode];
-    uint8 scancode = mac_keycode_to_scancode(keycode);
-    queue_input_event(EVENT_KEY, [event timestamp] * 1000, RDP_KEYRELEASE, scancode, 0);
+    uint16 scancode_with_flags = mac_keycode_to_scancode(keycode);
+    uint8 scancode = scancode_with_flags & 0xFF;
+    uint16 flags = RDP_KEYRELEASE | (scancode_with_flags & 0xFF00);
+    queue_input_event(EVENT_KEY, [event timestamp] * 1000, flags, scancode, 0);
 }
 
 - (void)mouseDown:(NSEvent *)event {

@@ -368,6 +368,8 @@ iso_connect(char *server, char *username, char *domain, char *password,
 			/* do not use encryption when using TLS */
 			g_encryption = False;
 			logger(Core, Notice, "Connection established using SSL.");
+			extern RD_BOOL g_nla_failure;
+			g_nla_failure = False;
 		}
 #ifdef WITH_CREDSSP
 		else if (data == PROTOCOL_HYBRID)
@@ -387,6 +389,8 @@ iso_connect(char *server, char *username, char *domain, char *password,
 			/* do not use encryption when using TLS */
 			logger(Core, Notice, "Connection established using CredSSP.");
 			g_encryption = False;
+			extern RD_BOOL g_nla_failure;
+			g_nla_failure = False;
 		}
 #endif
 		else if (data == PROTOCOL_RDP)

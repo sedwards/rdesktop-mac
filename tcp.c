@@ -36,7 +36,7 @@
 
 #include "rdesktop.h"
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(USE_OPENSSL)
 /* Use macOS native Secure Transport instead of OpenSSL */
 #include <Security/Security.h>
 #include <Security/SecureTransport.h>
@@ -86,14 +86,14 @@ extern RD_BOOL g_network_error;
 extern RD_BOOL g_reconnect_loop;
 extern char g_tls_version[];
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(USE_OPENSSL)
 static SSLContextRef g_ssl_ctx = NULL;
 #else
 static SSL_CTX *g_ssl_ctx = NULL;
 static SSL *g_ssl = NULL;
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(USE_OPENSSL)
 /* Secure Transport read callback */
 static OSStatus
 st_read_func(SSLConnectionRef connection, void *data, size_t *dataLength)
@@ -208,7 +208,7 @@ tcp_send(STREAM s)
 		in_uint8p(s, data, length);
 
 		if (g_ssl_initialized) {
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(USE_OPENSSL)
 			size_t processed = 0;
 			int flags = fcntl(g_sock, F_GETFL, 0);
 			if (flags >= 0) {
@@ -308,7 +308,7 @@ tcp_recv(STREAM s, uint32 length)
 	while (length > 0)
 	{
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(USE_OPENSSL)
 		/* Secure Transport doesn't have a pending check like OpenSSL */
 		if (g_ssl_initialized && g_run_ui)
 #else
@@ -334,7 +334,7 @@ tcp_recv(STREAM s, uint32 length)
 		s_seek(s, before);
 
 		if (g_ssl_initialized) {
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(USE_OPENSSL)
 			size_t processed = 0;
 			OSStatus status = SSLRead(g_ssl_ctx, data, length, &processed);
 
@@ -451,7 +451,7 @@ tcp_recv(STREAM s, uint32 length)
 	return s;
 }
 
-#ifndef __APPLE__
+#if !defined(__APPLE__) || defined(USE_OPENSSL)
 /*
  * Callback during handshake to verify peer certificate (OpenSSL only)
  */
@@ -502,7 +502,7 @@ openssl_fatal(const char *text)
 RD_BOOL
 tcp_tls_connect(void)
 {
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(USE_OPENSSL)
 	OSStatus status;
 	SSLProtocol protocol;
 
@@ -734,7 +734,7 @@ fail:
 STREAM
 tcp_tls_get_server_pubkey()
 {
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(USE_OPENSSL)
 	SecTrustRef trust = NULL;
 	SecCertificateRef cert = NULL;
 	SecKeyRef pubkey = NULL;
@@ -1073,7 +1073,7 @@ void
 tcp_disconnect(void)
 {
 	if (g_ssl_initialized) {
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(USE_OPENSSL)
 		if (g_ssl_ctx) {
 			SSLClose(g_ssl_ctx);
 			CFRelease(g_ssl_ctx);
