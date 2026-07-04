@@ -1311,17 +1311,16 @@ void show_nla_instructions_alert(void) {
     [NSApp activateIgnoringOtherApps:YES];
     
     NSAlert *alert = [[NSAlert alloc] init];
-    [alert setMessageText:@"Network Level Authentication (NLA) Error"];
+    [alert setMessageText:@"Connection Failed / RDP Security Error"];
     
     NSString *infoText = 
-        @"Connection failed because the Remote Desktop server requires Network Level Authentication (NLA).\n\n"
-        @"Because rdesktop uses the system GSSAPI (Kerberos) for NLA, it cannot authenticate standalone Windows machines using NTLMv2 natively.\n\n"
-        @"To resolve this on your standalone Windows 11 VM:\n"
-        @"1. Open Settings in the Windows VM.\n"
-        @"2. Go to System > Remote Desktop.\n"
-        @"3. Expand the Remote Desktop settings options.\n"
-        @"4. Uncheck 'Require devices to use Network Level Authentication to connect (Recommended)'.\n"
-        @"5. Click Confirm, then try connecting again.";
+        @"The RDP connection was closed or rejected by the server.\n\n"
+        @"This typically happens due to one of the following reasons:\n\n"
+        @"1. Another user is logged in at the Windows physical console, which prevents new incoming RDP sessions on non-Server Windows editions. (Please ensure you have logged out the console user on the host machine before connecting).\n\n"
+        @"2. The Remote Desktop server requires Network Level Authentication (NLA) to connect.\n\n"
+        @"Note: Because rdesktop uses system GSSAPI (Kerberos) for NLA on macOS, it cannot authenticate standalone Windows machines using NTLMv2 natively. If you need to disable NLA on your host VM:\n"
+        @"  - Open Settings > System > Remote Desktop.\n"
+        @"  - Expand Remote Desktop settings and uncheck 'Require devices to use Network Level Authentication to connect'.";
         
     [alert setInformativeText:infoText];
     [alert setAlertStyle:NSAlertStyleWarning];

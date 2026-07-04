@@ -83,9 +83,6 @@ int g_tcp_port_rdp = TCP_PORT_RDP;
 
 extern RD_BOOL g_exit_mainloop;
 extern RD_BOOL g_network_error;
-
-#include <pthread.h>
-static pthread_mutex_t g_tcp_mutex = PTHREAD_MUTEX_INITIALIZER;
 extern RD_BOOL g_reconnect_loop;
 extern char g_tls_version[];
 
@@ -102,19 +99,28 @@ static OSStatus
 st_read_func(SSLConnectionRef connection, void *data, size_t *dataLength)
 {
 	int sock = *(int *)connection;
-	ssize_t result = recv(sock, data, *dataLength, 0);
+	ssize_t result;
+
+	do {
+		result = recv(sock, data, *dataLength, 0);
+	} while (result == -1 && errno == EINTR);
 
 	if (result > 0) {
 		*dataLength = result;
 		return noErr;
 	} else if (result == 0) {
 		*dataLength = 0;
+		fprintf(stderr, "[macOS SSL] st_read_func: socket EOF (connection closed by peer)\n");
+		fflush(stderr);
 		return errSSLClosedGraceful;
 	} else {
 		*dataLength = 0;
-		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+		int err = errno;
+		if (err == EAGAIN || err == EWOULDBLOCK) {
 			return errSSLWouldBlock;
 		}
+		fprintf(stderr, "[macOS SSL] st_read_func: socket error %d: %s\n", err, strerror(err));
+		fflush(stderr);
 		return errSSLClosedAbort;
 	}
 }
@@ -124,19 +130,28 @@ static OSStatus
 st_write_func(SSLConnectionRef connection, const void *data, size_t *dataLength)
 {
 	int sock = *(int *)connection;
-	ssize_t result = send(sock, data, *dataLength, 0);
+	ssize_t result;
+
+	do {
+		result = send(sock, data, *dataLength, 0);
+	} while (result == -1 && errno == EINTR);
 
 	if (result > 0) {
 		*dataLength = result;
 		return noErr;
 	} else if (result == 0) {
 		*dataLength = 0;
+		fprintf(stderr, "[macOS SSL] st_write_func: socket EOF\n");
+		fflush(stderr);
 		return errSSLClosedGraceful;
 	} else {
 		*dataLength = 0;
-		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+		int err = errno;
+		if (err == EAGAIN || err == EWOULDBLOCK) {
 			return errSSLWouldBlock;
 		}
+		fprintf(stderr, "[macOS SSL] st_write_func: socket error %d: %s\n", err, strerror(err));
+		fflush(stderr);
 		return errSSLClosedAbort;
 	}
 }
@@ -195,9 +210,14 @@ tcp_send(STREAM s)
 		if (g_ssl_initialized) {
 #ifdef __APPLE__
 			size_t processed = 0;
-			pthread_mutex_lock(&g_tcp_mutex);
+			int flags = fcntl(g_sock, F_GETFL, 0);
+			if (flags >= 0) {
+				fcntl(g_sock, F_SETFL, flags & ~O_NONBLOCK);
+			}
 			OSStatus status = SSLWrite(g_ssl_ctx, data, length, &processed);
-			pthread_mutex_unlock(&g_tcp_mutex);
+			if (flags >= 0) {
+				fcntl(g_sock, F_SETFL, flags);
+			}
 			if (status == noErr || status == errSSLWouldBlock) {
 				sent = processed;
 				if (status == errSSLWouldBlock && sent == 0) {
@@ -232,9 +252,7 @@ tcp_send(STREAM s)
 		}
 		else
 		{
-			pthread_mutex_lock(&g_tcp_mutex);
 			sent = send(g_sock, data, length, 0);
-			pthread_mutex_unlock(&g_tcp_mutex);
 			if (sent <= 0)
 			{
 				if (sent == -1 && TCP_BLOCKS)
@@ -318,9 +336,7 @@ tcp_recv(STREAM s, uint32 length)
 		if (g_ssl_initialized) {
 #ifdef __APPLE__
 			size_t processed = 0;
-			pthread_mutex_lock(&g_tcp_mutex);
 			OSStatus status = SSLRead(g_ssl_ctx, data, length, &processed);
-			pthread_mutex_unlock(&g_tcp_mutex);
 
 			if (status == noErr || status == errSSLWouldBlock) {
 				rcvd = processed;
@@ -403,9 +419,7 @@ tcp_recv(STREAM s, uint32 length)
 		else
 		{
 			logger(Core, Debug, "tcp_recv(): calling recv() for %d bytes (non-SSL)...", length);
-			pthread_mutex_lock(&g_tcp_mutex);
 			rcvd = recv(g_sock, data, length, 0);
-			pthread_mutex_unlock(&g_tcp_mutex);
 			logger(Core, Debug, "tcp_recv(): recv() returned %d", rcvd);
 
 			if (rcvd < 0)

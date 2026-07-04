@@ -8,3 +8,5 @@ rdesktop*.tar.gz
 aclocal.m4
 *.o
 rdesktop-mac
+.DS_Store
+compile_err.log
