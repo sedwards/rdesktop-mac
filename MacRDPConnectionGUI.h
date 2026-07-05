@@ -34,6 +34,7 @@
 @property (retain) IBOutlet NSButton *advancedButton;
 
 // Advanced options panel
+@property (retain) IBOutlet NSView *basicView;
 @property (retain) IBOutlet NSView *advancedView;
 @property (assign) BOOL advancedVisible;
 

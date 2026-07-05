@@ -47,21 +47,34 @@ extern char g_keymapname[PATH_MAX];
 
 - (void)showConnectionWindow {
     if (!self.window) {
-        // Create window programmatically - start with basic size
-        NSRect windowRect = NSMakeRect(0, 0, 550, 480);
+        // Create window programmatically - start with basic size (550 x 280)
+        NSRect windowRect = NSMakeRect(0, 0, 550, 280);
         NSWindow *window = [[NSWindow alloc] initWithContentRect:windowRect
                                                        styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable)
-                                                         backing:NSBackingStoreBuffered
-                                                           defer:NO];
+                                                          backing:NSBackingStoreBuffered
+                                                            defer:NO];
         [window setDelegate:self];
         [window setReleasedWhenClosed:NO];
         [self setWindow:window];
         
-        // Create content view
+        // Create content view and disable subviews autoresizing
         NSView *contentView = [[NSView alloc] initWithFrame:windowRect];
+        [contentView setAutoresizesSubviews:NO];
         [window setContentView:contentView];
         
-        [self setupWindowControls:contentView];
+        // Create basicView container
+        self.basicView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 550, 280)];
+        [self.basicView setAutoresizesSubviews:NO];
+        [contentView addSubview:self.basicView];
+        
+        // Create advancedView container (starts hidden)
+        self.advancedView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 550, 500)];
+        [self.advancedView setAutoresizesSubviews:NO];
+        [self.advancedView setHidden:YES];
+        [contentView addSubview:self.advancedView];
+        
+        [self setupWindowControls:self.basicView];
+        [self setupAdvancedOptions:self.advancedView];
     }
     
     [[self window] center];
@@ -80,20 +93,26 @@ extern char g_keymapname[PATH_MAX];
     NSRect newFrame;
     
     if (self.advancedVisible) {
-        // Expand window to show advanced options
+        // Expand window to show advanced options (add 500 height)
         newFrame = NSMakeRect(currentFrame.origin.x, 
-                             currentFrame.origin.y - 400, // Move up to keep top in place
+                             currentFrame.origin.y - 500, // Move up to keep top in place
                              currentFrame.size.width,
-                             currentFrame.size.height + 400); // Add height for advanced options
+                             currentFrame.size.height + 500);
         [self.advancedButton setTitle:@"Basic"];
+        // Position basicView at the top of the expanded window
+        [self.basicView setFrame:NSMakeRect(0, 500, 550, 280)];
+        // Position advancedView at the bottom of the expanded window
+        [self.advancedView setFrame:NSMakeRect(0, 0, 550, 500)];
         [self.advancedView setHidden:NO];
     } else {
-        // Contract window to hide advanced options
+        // Contract window to hide advanced options (remove 500 height)
         newFrame = NSMakeRect(currentFrame.origin.x,
-                             currentFrame.origin.y + 400, // Move down
+                             currentFrame.origin.y + 500, // Move down
                              currentFrame.size.width,
-                             currentFrame.size.height - 400); // Remove height
+                             currentFrame.size.height - 500);
         [self.advancedButton setTitle:@"Advanced"];
+        // Position basicView back at the bottom
+        [self.basicView setFrame:NSMakeRect(0, 0, 550, 280)];
         [self.advancedView setHidden:YES];
     }
     
@@ -102,7 +121,7 @@ extern char g_keymapname[PATH_MAX];
 }
 
 - (void)setupWindowControls:(NSView *)contentView {
-    CGFloat y = 430; // Start higher to accommodate new password field
+    CGFloat y = 230; // Start at 230 for a 280-tall window
     CGFloat fieldHeight = 22;
     CGFloat labelWidth = 120;
     CGFloat fieldWidth = 200;
@@ -239,11 +258,10 @@ extern char g_keymapname[PATH_MAX];
     [self.connectButton setKeyEquivalent:@"\r"];
     [contentView addSubview:self.connectButton];
     
-    // Create advanced options view (initially hidden)
-    [self setupAdvancedOptions:contentView startY:y - 50];
 }
 
-- (void)setupAdvancedOptions:(NSView *)contentView startY:(CGFloat)startY {
+- (void)setupAdvancedOptions:(NSView *)advancedView {
+    CGFloat startY = 470;
     CGFloat y = startY;
     CGFloat fieldHeight = 22;
     CGFloat labelWidth = 140;
@@ -251,10 +269,7 @@ extern char g_keymapname[PATH_MAX];
     CGFloat margin = 20;
     CGFloat rightColumn = margin + labelWidth + fieldWidth + 20;
     
-    // Create advanced view container
-    self.advancedView = [[NSView alloc] initWithFrame:NSMakeRect(0, startY - 500, 520, 500)];
-    [self.advancedView setHidden:YES];
-    [contentView addSubview:self.advancedView];
+    // self.advancedView is already initialized and added in showConnectionWindow
     
     // Authentication & Security Section
     NSTextField *authLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, 200, fieldHeight)];
