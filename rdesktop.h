@@ -189,6 +189,12 @@
 #endif
 #endif
 
+#ifdef __APPLE__
+#define RDESKTOP_DIR "Library/Application Support/rdesktop"
+#else
+#define RDESKTOP_DIR ".rdesktop"
+#endif
+
 #include "utils.h"
 #include "stream.h"
 #include "constants.h"

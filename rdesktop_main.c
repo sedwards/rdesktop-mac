@@ -56,7 +56,11 @@
 
 /* Reconnect timeout based on approximated cookie life-time */
 #define RECONNECT_TIMEOUT (3600+600)
+#ifdef __APPLE__
+#define RDESKTOP_LICENSE_STORE "/Library/Application Support/rdesktop/licenses"
+#else
 #define RDESKTOP_LICENSE_STORE "/.local/share/rdesktop/licenses"
+#endif
 
 uint8 g_static_rdesktop_salt_16[16] = {
 	0xb8, 0x82, 0x29, 0x31, 0xc5, 0x39, 0xd9, 0x44,
@@ -1988,8 +1992,7 @@ load_licence(unsigned char **data)
 	fd = open(path, O_RDONLY);
 	if (fd == -1)
 	{
-		/* fallback to try reading old license file */
-		snprintf(path, PATH_MAX, "%s/.rdesktop/license.%s", home, g_hostname);
+		snprintf(path, PATH_MAX, "%s/" RDESKTOP_DIR "/license.%s", home, g_hostname);
 		path[sizeof(path) - 1] = '\0';
 		if ((fd = open(path, O_RDONLY)) == -1)
 			return -1;
@@ -2135,7 +2138,7 @@ rd_pstcache_mkdir(void)
 	if (home == NULL)
 		return False;
 
-	sprintf(bmpcache_dir, "%s/%s", home, ".rdesktop");
+	sprintf(bmpcache_dir, "%s/%s", home, RDESKTOP_DIR);
 
 	if ((mkdir(bmpcache_dir, S_IRWXU) == -1) && errno != EEXIST)
 	{
@@ -2143,7 +2146,7 @@ rd_pstcache_mkdir(void)
 		return False;
 	}
 
-	sprintf(bmpcache_dir, "%s/%s", home, ".rdesktop/cache");
+	sprintf(bmpcache_dir, "%s/%s", home, RDESKTOP_DIR "/cache");
 
 	if ((mkdir(bmpcache_dir, S_IRWXU) == -1) && errno != EEXIST)
 	{
@@ -2165,7 +2168,7 @@ rd_open_file(char *filename)
 	home = getenv("HOME");
 	if (home == NULL)
 		return -1;
-	sprintf(fn, "%s/.rdesktop/%s", home, filename);
+	sprintf(fn, "%s/" RDESKTOP_DIR "/%s", home, filename);
 	fd = open(fn, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 	if (fd == -1)
 		logger(Core, Error, "rd_open_file(), open() failed: %s", strerror(errno));

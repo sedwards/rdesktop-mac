@@ -42,9 +42,9 @@ printercache_mkdir(char *base, char *printer)
 {
 	char *path;
 
-	path = (char *) xmalloc(strlen(base) + sizeof("/.rdesktop/rdpdr/") + strlen(printer) + 1);
+	path = (char *) xmalloc(strlen(base) + sizeof("/" RDESKTOP_DIR "/rdpdr/") + strlen(printer) + 1);
 
-	sprintf(path, "%s/.rdesktop", base);
+	sprintf(path, "%s/" RDESKTOP_DIR, base);
 	if ((mkdir(path, 0700) == -1) && errno != EEXIST)
 	{
 		logger(Core, Error, "printercache_mkdir(), mkdir() failed: %s", strerror(errno));
@@ -86,10 +86,10 @@ printercache_unlink_blob(char *printer)
 	if (home == NULL)
 		return False;
 
-	path = (char *) xmalloc(strlen(home) + sizeof("/.rdesktop/rdpdr/") + strlen(printer) +
+	path = (char *) xmalloc(strlen(home) + sizeof("/" RDESKTOP_DIR "/rdpdr/") + strlen(printer) +
 				sizeof("/AutoPrinterCacheData") + 1);
 
-	sprintf(path, "%s/.rdesktop/rdpdr/%s/AutoPrinterCacheData", home, printer);
+	sprintf(path, "%s/" RDESKTOP_DIR "/rdpdr/%s/AutoPrinterCacheData", home, printer);
 
 	if (unlink(path) < 0)
 	{
@@ -97,7 +97,7 @@ printercache_unlink_blob(char *printer)
 		return False;
 	}
 
-	sprintf(path, "%s/.rdesktop/rdpdr/%s", home, printer);
+	sprintf(path, "%s/" RDESKTOP_DIR "/rdpdr/%s", home, printer);
 
 	if (rmdir(path) < 0)
 	{
@@ -129,13 +129,13 @@ printercache_rename_blob(char *printer, char *new_printer)
 	printer_maxlen =
 		(strlen(printer) >
 		 strlen(new_printer) ? strlen(printer) : strlen(new_printer)) + strlen(home) +
-		sizeof("/.rdesktop/rdpdr/") + 1;
+		sizeof("/" RDESKTOP_DIR "/rdpdr/") + 1;
 
 	printer_path = (char *) xmalloc(printer_maxlen);
 	new_printer_path = (char *) xmalloc(printer_maxlen);
 
-	sprintf(printer_path, "%s/.rdesktop/rdpdr/%s", home, printer);
-	sprintf(new_printer_path, "%s/.rdesktop/rdpdr/%s", home, new_printer);
+	sprintf(printer_path, "%s/" RDESKTOP_DIR "/rdpdr/%s", home, printer);
+	sprintf(new_printer_path, "%s/" RDESKTOP_DIR "/rdpdr/%s", home, new_printer);
 
 	logger(Core, Debug, "printercache_rename_blob(), printer_path=%s, new_printer_path=%s",
 	       printer_path, new_printer_path);
@@ -170,9 +170,9 @@ printercache_load_blob(char *printer_name, uint8 ** data)
 	if (home == NULL)
 		return 0;
 
-	path = (char *) xmalloc(strlen(home) + sizeof("/.rdesktop/rdpdr/") + strlen(printer_name) +
+	path = (char *) xmalloc(strlen(home) + sizeof("/" RDESKTOP_DIR "/rdpdr/") + strlen(printer_name) +
 				sizeof("/AutoPrinterCacheData") + 1);
-	sprintf(path, "%s/.rdesktop/rdpdr/%s/AutoPrinterCacheData", home, printer_name);
+	sprintf(path, "%s/" RDESKTOP_DIR "/rdpdr/%s/AutoPrinterCacheData", home, printer_name);
 
 	fd = open(path, O_RDONLY);
 	if (fd == -1)
@@ -210,9 +210,9 @@ printercache_save_blob(char *printer_name, uint8 * data, uint32 length)
 	if (!printercache_mkdir(home, printer_name))
 		return;
 
-	path = (char *) xmalloc(strlen(home) + sizeof("/.rdesktop/rdpdr/") + strlen(printer_name) +
+	path = (char *) xmalloc(strlen(home) + sizeof("/" RDESKTOP_DIR "/rdpdr/") + strlen(printer_name) +
 				sizeof("/AutoPrinterCacheData") + 1);
-	sprintf(path, "%s/.rdesktop/rdpdr/%s/AutoPrinterCacheData", home, printer_name);
+	sprintf(path, "%s/" RDESKTOP_DIR "/rdpdr/%s/AutoPrinterCacheData", home, printer_name);
 
 	fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	if (fd == -1)

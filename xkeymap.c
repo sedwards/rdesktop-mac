@@ -344,7 +344,7 @@ xkeymap_open(const char *filename)
 	home = getenv("HOME");
 	if (home)
 	{
-		path1 = pathjoin(home, ".rdesktop/keymaps");
+		path1 = pathjoin(home, RDESKTOP_DIR "/keymaps");
 		path2 = pathjoin(path1, filename);
 		xfree(path1);
 		fp = fopen(path2, "r");
