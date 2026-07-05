@@ -167,10 +167,10 @@ old_postuninstall_cmds=""
 lock_old_archive_extraction=yes
 
 # A C compiler.
-LTCC="clang"
+LTCC="gcc"
 
 # LTCC compiler flags.
-LTCFLAGS="-O2 -Wall -Wextra -mmacosx-version-min=10.15 -Wall -Wextra "
+LTCFLAGS="-g -O2 -Wall -Wextra  "
 
 # Take the output of nm and produce a listing of raw symbols and C names.
 global_symbol_pipe="/usr/bin/sed -n -e 's/^.*[	 ]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[	 ][	 ]*_\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 _\\2 \\2/p' | /usr/bin/sed '/ __gnu_lto/d'"
@@ -320,7 +320,7 @@ reload_cmds="\$LTCC \$LTCFLAGS -nostdlib \$wl-r -o \$output\$reload_objs"
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$tool_oldlib"
 
 # A language specific compiler.
-CC="clang"
+CC="gcc"
 
 # Is the compiler the GNU compiler?
 with_gcc=yes

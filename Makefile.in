@@ -16,8 +16,8 @@ KEYMAP_PATH = $(datadir)/rdesktop/keymaps/
 
 CC          = @CC@
 INSTALL     = @INSTALL@
-CFLAGS      = @CFLAGS@ @DEFS@ -DKEYMAP_PATH=\"$(KEYMAP_PATH)\"
-LDFLAGS     = @LDFLAGS@ @LIBS@
+CFLAGS      = @CFLAGS@ @DEFS@ -DKEYMAP_PATH=\"$(KEYMAP_PATH)\" -DUSE_OPENSSL -I/usr/local/opt/openssl@3/include
+LDFLAGS     = @LDFLAGS@ @LIBS@ -L/usr/local/opt/openssl@3/lib -lssl -lcrypto
 STRIP       = @STRIP@
 
 TARGETS     = rdesktop-mac

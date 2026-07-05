@@ -13,16 +13,21 @@ extern int rdesktop_main(int argc, char *argv[]);
 
 @interface MacRDPAppDelegate : NSObject <NSApplicationDelegate>
 @property (strong) MacRDPConnectionGUI *connectionGUI;
+@property (assign) BOOL shouldShowGUI;
 - (void)setupMenuBar;
 @end
 
 @implementation MacRDPAppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-    // Initialize connection GUI
-    self.connectionGUI = [[MacRDPConnectionGUI alloc] init];
+    // Initialize connection GUI if not already set
+    if (!self.connectionGUI) {
+        self.connectionGUI = [[MacRDPConnectionGUI alloc] init];
+    }
     [self setupMenuBar];
-    [self.connectionGUI showConnectionWindow];
+    if (self.shouldShowGUI) {
+        [self.connectionGUI showConnectionWindow];
+    }
 }
 
 - (void)setupMenuBar {
@@ -141,6 +146,7 @@ int main(int argc, char *argv[]) {
             [app activateIgnoringOtherApps:YES];
             
             MacRDPAppDelegate *delegate = [[MacRDPAppDelegate alloc] init];
+            delegate.shouldShowGUI = YES;
             [app setDelegate:delegate];
             
 [app run];

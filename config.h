@@ -218,13 +218,13 @@
 /* #undef WITH_PCSC120 */
 
 /* Define to 1 if PnP notifications are supported */
-/* #undef WITH_PNP_NOTIFICATIONS */
+#define WITH_PNP_NOTIFICATIONS 1
 
 /* Define to 1 if sound support is enabled */
 /* #undef WITH_RDPSND */
 
 /* Define to 1 if smartcard support is enabled */
-/* #undef WITH_SCARD */
+#define WITH_SCARD 1
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

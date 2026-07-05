@@ -883,7 +883,10 @@ extern char g_keymapname[PATH_MAX];
 }
 
 - (void)windowWillClose:(NSNotification *)notification {
-    [NSApp terminate:self];
+    extern RD_BOOL g_connection_established;
+    if (!g_connection_established && !self.isConnecting) {
+        [NSApp terminate:self];
+    }
 }
 
 #pragma mark - Menu Actions

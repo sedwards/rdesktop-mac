@@ -492,6 +492,21 @@ ui_init(void)
     [g_app finishLaunching];
     [g_app activateIgnoringOtherApps:YES];
 
+    static id g_app_delegate = nil;
+    if ([g_app delegate] == nil) {
+        Class delegateClass = NSClassFromString(@"MacRDPAppDelegate");
+        if (delegateClass) {
+            g_app_delegate = [[delegateClass alloc] init];
+            Class guiClass = NSClassFromString(@"MacRDPConnectionGUI");
+            if (guiClass) {
+                id gui = [[guiClass alloc] init];
+                [g_app_delegate setValue:gui forKey:@"connectionGUI"];
+            }
+            [g_app setDelegate:g_app_delegate];
+            [g_app_delegate performSelector:@selector(setupMenuBar)];
+        }
+    }
+
     NSLog(@"[macOS DEBUG] NSApplication initialized successfully");
 
     g_colorspace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
