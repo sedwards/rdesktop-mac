@@ -81,3 +81,13 @@ Upon successful compilation, the output binary `rdesktop-mac` will be generated 
 ```bash
 ./rdesktop-mac -u <username> -p <password> <host_ip>:3389
 ```
+
+---
+
+## Future Packaging & Bundling Plans
+
+To deliver `rdesktop-mac` as a self-contained, standard macOS `.app` bundle, the project aims to remove the runtime dependency on Homebrew's OpenSSL. 
+
+### Planned Migration:
+* **Bundled Cryptography**: Compile and embed static libraries of **OpenSSL** and/or **GnuTLS** inside the application bundle (e.g. under `rdesktop-mac.app/Contents/Frameworks/`).
+* **Zero Host Prerequisites**: This will remove the requirement for end users to have Homebrew or `/usr/local/opt/openssl@3` installed, enabling a simple drag-and-drop installation.
