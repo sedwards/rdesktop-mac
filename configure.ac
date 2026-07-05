@@ -82,9 +82,9 @@ AC_ARG_ENABLE([credssp], AS_HELP_STRING([--disable-credssp], [disable support fo
 AS_IF([test "x$enable_credssp" != "xno"], [
 	case "$host" in
 	     *-*-darwin*)
-		AC_CHECK_HEADER(Kerberos/gssapi_krb5.h, [WITH_CREDSSP=1], [WITH_CREDSSP=0])
+		AC_CHECK_HEADER(GSS/gssapi.h, [WITH_CREDSSP=1], [WITH_CREDSSP=0])
 		GSSAPI_CFLAGS=""
-		GSSAPI_LIBS="-framework Kerberos"
+		GSSAPI_LIBS="-framework GSS"
 		;;
 	     *)
 		#if 'OSTYPE' is not set use 'host' instead

@@ -1336,10 +1336,7 @@ void show_nla_instructions_alert(void) {
         @"The RDP connection was closed or rejected by the server.\n\n"
         @"This typically happens due to one of the following reasons:\n\n"
         @"1. Another user is logged in at the Windows physical console, which prevents new incoming RDP sessions on non-Server Windows editions. (Please ensure you have logged out the console user on the host machine before connecting).\n\n"
-        @"2. The Remote Desktop server requires Network Level Authentication (NLA) to connect.\n\n"
-        @"Note: Because rdesktop uses system GSSAPI (Kerberos) for NLA on macOS, it cannot authenticate standalone Windows machines using NTLMv2 natively. If you need to disable NLA on your host VM:\n"
-        @"  - Open Settings > System > Remote Desktop.\n"
-        @"  - Expand Remote Desktop settings and uncheck 'Require devices to use Network Level Authentication to connect'.";
+        @"2. A network drop or credential mismatch occurred during secure negotiation.";
         
     [alert setInformativeText:infoText];
     [alert setAlertStyle:NSAlertStyleWarning];

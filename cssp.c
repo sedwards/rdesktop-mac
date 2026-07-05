@@ -17,7 +17,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef __APPLE__
+#include <GSS/gssapi.h>
+#else
 #include <gssapi/gssapi.h>
+#endif
 #include "rdesktop.h"
 
 extern RD_BOOL g_use_password_as_pin;
