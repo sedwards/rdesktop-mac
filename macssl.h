@@ -155,57 +155,35 @@ int asn1_der_coding(asn1_node element, const char *name, void *ider, int *len, c
 int asn1_der_decoding(asn1_node *element, const void *ider, int ider_len, char *errorDescription);
 int asn1_read_value(asn1_node node_root, const char *name, void *ivalue, int *len);
 
-/* Function aliases for rdssl_* naming compatibility */
-#define rdssl_md5_init ssl_md5_init
-#define rdssl_md5_update ssl_md5_update
-#define rdssl_md5_final ssl_md5_final
-#define rdssl_sha1_init ssl_sha1_init
-#define rdssl_sha1_update ssl_sha1_update
-#define rdssl_sha1_final ssl_sha1_final
-#define rdssl_rc4_set_key ssl_rc4_set_key
-#define rdssl_rc4_crypt ssl_rc4_crypt
-#define rdssl_rsa_encrypt ssl_rsa_encrypt
-#define rdssl_cert_read ssl_cert_read
-#define rdssl_cert_free ssl_cert_free
-#define rdssl_cert_to_rkey ssl_cert_to_rkey
-#define rdssl_rkey_free ssl_rkey_free
-#define rdssl_rkey_get_exp_mod ssl_rkey_get_exp_mod
-#define rdssl_cert_verify ssl_cert_verify
-#define rdssl_rkey_get_dword ssl_rkey_get_dword
-#define rdssl_hmac_md5 ssl_hmac_md5
-#define rdssl_sig_sha1 ssl_sig_sha1
-#define rdssl_sig_ok ssl_sig_ok
-#define rdssl_certs_ok ssl_certs_ok
-
 /* Function declarations */
-void ssl_sha1_init(SSL_SHA1 * sha1);
-void ssl_sha1_update(SSL_SHA1 * sha1, uint8 * data, uint32 len);
-void ssl_sha1_final(SSL_SHA1 * sha1, uint8 * out);
+void rdssl_sha1_init(SSL_SHA1 * sha1);
+void rdssl_sha1_update(SSL_SHA1 * sha1, uint8 * data, uint32 len);
+void rdssl_sha1_final(SSL_SHA1 * sha1, uint8 * out);
 
-void ssl_md5_init(SSL_MD5 * md5);
-void ssl_md5_update(SSL_MD5 * md5, uint8 * data, uint32 len);
-void ssl_md5_final(SSL_MD5 * md5, uint8 * out);
+void rdssl_md5_init(SSL_MD5 * md5);
+void rdssl_md5_update(SSL_MD5 * md5, uint8 * data, uint32 len);
+void rdssl_md5_final(SSL_MD5 * md5, uint8 * out);
 
-void ssl_rc4_set_key(SSL_RC4 * rc4, uint8 * key, uint32 len);
-void ssl_rc4_crypt(SSL_RC4 * rc4, uint8 * in, uint8 * out, uint32 len);
+void rdssl_rc4_set_key(SSL_RC4 * rc4, uint8 * key, uint32 len);
+void rdssl_rc4_crypt(SSL_RC4 * rc4, uint8 * in, uint8 * out, uint32 len);
 
-RD_BOOL ssl_rsa_encrypt(uint8 * out, uint8 * in, int len, uint32 modulus_size, uint8 * modulus, uint8 * exponent);
+RD_BOOL rdssl_rsa_encrypt(uint8 * out, uint8 * in, int len, uint32 modulus_size, uint8 * modulus, uint8 * exponent);
 
-SSL_CERT * ssl_cert_read(uint8 * data, uint32 len);
-void ssl_cert_free(SSL_CERT * cert);
-SSL_RKEY * ssl_cert_to_rkey(SSL_CERT * cert, uint32 * key_len);
-void ssl_rkey_free(SSL_RKEY * rkey);
+SSL_CERT * rdssl_cert_read(uint8 * data, uint32 len);
+void rdssl_cert_free(SSL_CERT * cert);
+SSL_RKEY * rdssl_cert_to_rkey(SSL_CERT * cert, uint32 * key_len);
+void rdssl_rkey_free(SSL_RKEY * rkey);
 
-int ssl_rkey_get_exp_mod(SSL_RKEY * rkey, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len);
-RD_BOOL ssl_cert_verify(SSL_CERT * server_cert, SSL_CERT * cacert);
-int ssl_rkey_get_dword(SSL_RKEY * rkey, const char * name, uint8 * buf);
-void ssl_hmac_md5(const void *key, int key_len, const unsigned char *data, int data_len, unsigned char *result);
-void ssl_sig_sha1(SSL_CERT * cert, int len, uint8 * data, uint8 * hash);
-RD_BOOL ssl_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len,
+int rdssl_rkey_get_exp_mod(SSL_RKEY * rkey, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len);
+RD_BOOL rdssl_cert_verify(SSL_CERT * server_cert, SSL_CERT * cacert);
+int rdssl_rkey_get_dword(SSL_RKEY * rkey, const char * name, uint8 * buf);
+void rdssl_hmac_md5(const void *key, int key_len, const unsigned char *data, int data_len, unsigned char *result);
+void rdssl_sig_sha1(SSL_CERT * cert, int len, uint8 * data, uint8 * hash);
+RD_BOOL rdssl_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len,
                    uint8 * signature, uint32 sig_len);
-RD_BOOL ssl_certs_ok(SSL_CERT * server_cert, SSL_CERT * cacert);
+RD_BOOL rdssl_certs_ok(SSL_CERT * server_cert, SSL_CERT * cacert);
 
-void ssl_lib_init(void);
-void ssl_lib_cleanup(void);
+void rdssl_lib_init(void);
+void rdssl_lib_cleanup(void);
 
 #endif /* _MACSSL_H */

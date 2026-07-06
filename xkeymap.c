@@ -332,6 +332,29 @@ pathjoin(const char *a, const char *b)
 	return result;
 }
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#include <libgen.h>
+
+static char *
+mac_get_resources_path(void)
+{
+	static char res_path[PATH_MAX] = {0};
+	if (res_path[0] == '\0')
+	{
+		char path[PATH_MAX] = {0};
+		uint32_t size = sizeof(path);
+		if (_NSGetExecutablePath(path, &size) == 0)
+		{
+			char *dir = dirname(path);
+			char *parent_dir = dirname(dir);
+			snprintf(res_path, sizeof(res_path), "%s/Resources", parent_dir);
+		}
+	}
+	return res_path;
+}
+#endif
+
 /* Try to open a keymap with fopen() */
 FILE *
 xkeymap_open(const char *filename)
@@ -339,6 +362,22 @@ xkeymap_open(const char *filename)
 	char *path1, *path2;
 	char *home;
 	FILE *fp;
+
+#ifdef __APPLE__
+	{
+		char *res_path = mac_get_resources_path();
+		if (res_path && strlen(res_path) > 0)
+		{
+			path1 = pathjoin(res_path, "keymaps");
+			path2 = pathjoin(path1, filename);
+			xfree(path1);
+			fp = fopen(path2, "r");
+			xfree(path2);
+			if (fp)
+				return fp;
+		}
+	}
+#endif
 
 	/* Try ~/.rdesktop/keymaps */
 	home = getenv("HOME");

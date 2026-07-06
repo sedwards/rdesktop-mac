@@ -7,6 +7,10 @@ configure
 rdesktop*.tar.gz
 aclocal.m4
 *.o
+*.a
+*.dylib
 rdesktop-mac
+rdesktop-mac.app
 .DS_Store
 compile_err.log
+test_types

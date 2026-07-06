@@ -47,8 +47,8 @@ extern char g_keymapname[PATH_MAX];
 
 - (void)showConnectionWindow {
     if (!self.window) {
-        // Create window programmatically - start with basic size (550 x 280)
-        NSRect windowRect = NSMakeRect(0, 0, 550, 280);
+        // Create window programmatically - start with basic size (620 x 240)
+        NSRect windowRect = NSMakeRect(0, 0, 620, 240);
         NSWindow *window = [[NSWindow alloc] initWithContentRect:windowRect
                                                        styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable)
                                                           backing:NSBackingStoreBuffered
@@ -63,12 +63,12 @@ extern char g_keymapname[PATH_MAX];
         [window setContentView:contentView];
         
         // Create basicView container
-        self.basicView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 550, 280)];
+        self.basicView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 620, 240)];
         [self.basicView setAutoresizesSubviews:NO];
         [contentView addSubview:self.basicView];
         
         // Create advancedView container (starts hidden)
-        self.advancedView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 550, 500)];
+        self.advancedView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 620, 400)];
         [self.advancedView setAutoresizesSubviews:NO];
         [self.advancedView setHidden:YES];
         [contentView addSubview:self.advancedView];
@@ -93,26 +93,26 @@ extern char g_keymapname[PATH_MAX];
     NSRect newFrame;
     
     if (self.advancedVisible) {
-        // Expand window to show advanced options (add 500 height)
+        // Expand window to show advanced options (add 400 height)
         newFrame = NSMakeRect(currentFrame.origin.x, 
-                             currentFrame.origin.y - 500, // Move up to keep top in place
+                             currentFrame.origin.y - 400, // Move up to keep top in place
                              currentFrame.size.width,
-                             currentFrame.size.height + 500);
+                             currentFrame.size.height + 400);
         [self.advancedButton setTitle:@"Basic"];
         // Position basicView at the top of the expanded window
-        [self.basicView setFrame:NSMakeRect(0, 500, 550, 280)];
+        [self.basicView setFrame:NSMakeRect(0, 400, 620, 240)];
         // Position advancedView at the bottom of the expanded window
-        [self.advancedView setFrame:NSMakeRect(0, 0, 550, 500)];
+        [self.advancedView setFrame:NSMakeRect(0, 0, 620, 400)];
         [self.advancedView setHidden:NO];
     } else {
-        // Contract window to hide advanced options (remove 500 height)
+        // Contract window to hide advanced options (remove 400 height)
         newFrame = NSMakeRect(currentFrame.origin.x,
-                             currentFrame.origin.y + 500, // Move down
+                             currentFrame.origin.y + 400, // Move down
                              currentFrame.size.width,
-                             currentFrame.size.height - 500);
+                             currentFrame.size.height - 400);
         [self.advancedButton setTitle:@"Advanced"];
         // Position basicView back at the bottom
-        [self.basicView setFrame:NSMakeRect(0, 0, 550, 280)];
+        [self.basicView setFrame:NSMakeRect(0, 0, 620, 240)];
         [self.advancedView setHidden:YES];
     }
     
@@ -121,11 +121,11 @@ extern char g_keymapname[PATH_MAX];
 }
 
 - (void)setupWindowControls:(NSView *)contentView {
-    CGFloat y = 230; // Start at 230 for a 280-tall window
+    CGFloat y = 195; // Start at 195 for a 240-tall window
     CGFloat fieldHeight = 22;
     CGFloat labelWidth = 120;
     CGFloat fieldWidth = 200;
-    CGFloat margin = 20;
+    CGFloat margin = 150; // Center basic controls inside 620-wide window
     
     self.advancedVisible = NO;
     
@@ -149,7 +149,7 @@ extern char g_keymapname[PATH_MAX];
     [self.portField setStringValue:@"3389"];
     [contentView addSubview:self.portField];
     
-    y -= 35;
+    y -= 30;
     
     // Username
     NSTextField *userLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
@@ -163,7 +163,7 @@ extern char g_keymapname[PATH_MAX];
     self.usernameField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth, fieldHeight)];
     [contentView addSubview:self.usernameField];
     
-    y -= 35;
+    y -= 30;
     
     // Password
     NSTextField *passLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
@@ -177,7 +177,7 @@ extern char g_keymapname[PATH_MAX];
     self.passwordField = [[NSSecureTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth, fieldHeight)];
     [contentView addSubview:self.passwordField];
     
-    y -= 35;
+    y -= 30;
     
     // Domain
     NSTextField *domainLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
@@ -191,7 +191,7 @@ extern char g_keymapname[PATH_MAX];
     self.domainField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth, fieldHeight)];
     [contentView addSubview:self.domainField];
     
-    y -= 35;
+    y -= 30;
     
     // Window geometry
     NSTextField *geomLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
@@ -219,7 +219,7 @@ extern char g_keymapname[PATH_MAX];
     [self.heightField setStringValue:@"768"];
     [contentView addSubview:self.heightField];
     
-    y -= 35;
+    y -= 30;
     
     // Keymap
     NSTextField *keymapLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
@@ -234,7 +234,7 @@ extern char g_keymapname[PATH_MAX];
     [self setupKeymapPopup];
     [contentView addSubview:self.keymapPopup];
     
-    y -= 50;
+    y -= 35;
     
     // Buttons
     self.addButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, 30, 30)];
@@ -261,17 +261,17 @@ extern char g_keymapname[PATH_MAX];
 }
 
 - (void)setupAdvancedOptions:(NSView *)advancedView {
-    CGFloat startY = 470;
+    CGFloat startY = 370;
     CGFloat y = startY;
     CGFloat fieldHeight = 22;
-    CGFloat labelWidth = 140;
-    CGFloat fieldWidth = 180;
-    CGFloat margin = 20;
-    CGFloat rightColumn = margin + labelWidth + fieldWidth + 20;
+    CGFloat labelWidth = 150;
+    CGFloat fieldWidth = 160;
+    CGFloat margin = 30;
+    CGFloat rightColumn = 370;
     
     // self.advancedView is already initialized and added in showConnectionWindow
     
-    // Authentication & Security Section
+    // Authentication & Security Section (Left Column)
     NSTextField *authLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, 200, fieldHeight)];
     [authLabel setStringValue:@"Authentication & Security"];
     [authLabel setBezeled:NO];
@@ -280,7 +280,7 @@ extern char g_keymapname[PATH_MAX];
     [authLabel setSelectable:NO];
     [authLabel setFont:[NSFont boldSystemFontOfSize:13]];
     [self.advancedView addSubview:authLabel];
-    y -= 25;
+    y -= 22;
     
     // Client hostname
     NSTextField *clientHostLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
@@ -293,7 +293,7 @@ extern char g_keymapname[PATH_MAX];
     
     self.clientHostnameField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth, fieldHeight)];
     [self.advancedView addSubview:self.clientHostnameField];
-    y -= 25;
+    y -= 22;
     
     // TLS Version
     NSTextField *tlsLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
@@ -310,26 +310,26 @@ extern char g_keymapname[PATH_MAX];
     [self.tlsVersionPopup addItemWithTitle:@"1.1"];
     [self.tlsVersionPopup addItemWithTitle:@"1.2"];
     [self.advancedView addSubview:self.tlsVersionPopup];
-    y -= 25;
+    y -= 22;
     
-    // Security checkboxes (left column)
-    self.smartcardButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 200, fieldHeight)];
+    // Security checkboxes
+    self.smartcardButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 220, fieldHeight)];
     [self.smartcardButton setTitle:@"Enable Smartcard Authentication"];
     [self.smartcardButton setButtonType:NSButtonTypeSwitch];
     [self.advancedView addSubview:self.smartcardButton];
-    y -= 25;
+    y -= 22;
     
-    self.disableEncryptionButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 200, fieldHeight)];
+    self.disableEncryptionButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 220, fieldHeight)];
     [self.disableEncryptionButton setTitle:@"Disable Encryption (French TS)"];
     [self.disableEncryptionButton setButtonType:NSButtonTypeSwitch];
     [self.advancedView addSubview:self.disableEncryptionButton];
-    y -= 25;
+    y -= 22;
     
-    self.disableClientEncryptionButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 200, fieldHeight)];
+    self.disableClientEncryptionButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 220, fieldHeight)];
     [self.disableClientEncryptionButton setTitle:@"Disable Client-to-Server Encryption"];
     [self.disableClientEncryptionButton setButtonType:NSButtonTypeSwitch];
     [self.advancedView addSubview:self.disableClientEncryptionButton];
-    y -= 40;
+    y -= 30;
     
     // Display Options Section
     NSTextField *displayLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, 200, fieldHeight)];
@@ -340,7 +340,7 @@ extern char g_keymapname[PATH_MAX];
     [displayLabel setSelectable:NO];
     [displayLabel setFont:[NSFont boldSystemFontOfSize:13]];
     [self.advancedView addSubview:displayLabel];
-    y -= 25;
+    y -= 22;
     
     // Color depth
     NSTextField *colorDepthLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
@@ -359,20 +359,7 @@ extern char g_keymapname[PATH_MAX];
     [self.colorDepthPopup addItemWithTitle:@"24-bit"];
     [self.colorDepthPopup addItemWithTitle:@"32-bit"];
     [self.advancedView addSubview:self.colorDepthPopup];
-    y -= 25;
-    
-    // Window title
-    NSTextField *titleLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
-    [titleLabel setStringValue:@"Window Title:"];
-    [titleLabel setBezeled:NO];
-    [titleLabel setDrawsBackground:NO];
-    [titleLabel setEditable:NO];
-    [titleLabel setSelectable:NO];
-    [self.advancedView addSubview:titleLabel];
-    
-    self.windowTitleField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth, fieldHeight)];
-    [self.advancedView addSubview:self.windowTitleField];
-    y -= 25;
+    y -= 22;
     
     // DPI
     NSTextField *dpiLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
@@ -385,24 +372,50 @@ extern char g_keymapname[PATH_MAX];
     
     self.dpiField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, 60, fieldHeight)];
     [self.advancedView addSubview:self.dpiField];
-    y -= 25;
+    y -= 22;
     
-    // Display checkboxes
+    // Full-screen mode
     self.fullscreenButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 150, fieldHeight)];
     [self.fullscreenButton setTitle:@"Full-screen Mode"];
     [self.fullscreenButton setButtonType:NSButtonTypeSwitch];
     [self.advancedView addSubview:self.fullscreenButton];
+    y -= 30;
     
-    self.hideDecorationsButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 150, fieldHeight)];
-    [self.hideDecorationsButton setTitle:@"Hide Decorations"];
-    [self.hideDecorationsButton setButtonType:NSButtonTypeSwitch];
-    [self.advancedView addSubview:self.hideDecorationsButton];
-    y -= 25;
+    // Input Options Section (Left Column continued)
+    NSTextField *inputLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, 200, fieldHeight)];
+    [inputLabel setStringValue:@"Input Options"];
+    [inputLabel setBezeled:NO];
+    [inputLabel setDrawsBackground:NO];
+    [inputLabel setEditable:NO];
+    [inputLabel setSelectable:NO];
+    [inputLabel setFont:[NSFont boldSystemFontOfSize:13]];
+    [self.advancedView addSubview:inputLabel];
+    y -= 22;
     
-    // Right column continues with more display options
-    y = startY - 200; // Reset Y for right column
+    self.sendMotionEventsButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 180, fieldHeight)];
+    [self.sendMotionEventsButton setTitle:@"Send Motion Events"];
+    [self.sendMotionEventsButton setButtonType:NSButtonTypeSwitch];
+    [self.sendMotionEventsButton setState:NSControlStateValueOn]; // Default enabled
+    [self.advancedView addSubview:self.sendMotionEventsButton];
+    y -= 22;
     
-    // Performance & Experience Section (right column)
+    self.localMouseCursorButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 180, fieldHeight)];
+    [self.localMouseCursorButton setTitle:@"Use Local Mouse Cursor"];
+    [self.localMouseCursorButton setButtonType:NSButtonTypeSwitch];
+    [self.advancedView addSubview:self.localMouseCursorButton];
+    y -= 22;
+    
+    self.numlockSyncButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 180, fieldHeight)];
+    [self.numlockSyncButton setTitle:@"Numlock Synchronization"];
+    [self.numlockSyncButton setButtonType:NSButtonTypeSwitch];
+    [self.advancedView addSubview:self.numlockSyncButton];
+    
+    // ----------------------------------------------------
+    // Right Column Layout
+    // ----------------------------------------------------
+    y = startY;
+    
+    // Performance & Experience Section (Right Column)
     NSTextField *perfLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(rightColumn, y, 200, fieldHeight)];
     [perfLabel setStringValue:@"Performance & Experience"];
     [perfLabel setBezeled:NO];
@@ -411,7 +424,7 @@ extern char g_keymapname[PATH_MAX];
     [perfLabel setSelectable:NO];
     [perfLabel setFont:[NSFont boldSystemFontOfSize:13]];
     [self.advancedView addSubview:perfLabel];
-    y -= 25;
+    y -= 22;
     
     // Experience level
     NSTextField *expLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(rightColumn, y, 100, fieldHeight)];
@@ -428,130 +441,36 @@ extern char g_keymapname[PATH_MAX];
     [self.experiencePopup addItemWithTitle:@"Broadband"];
     [self.experiencePopup addItemWithTitle:@"LAN"];
     [self.advancedView addSubview:self.experiencePopup];
-    y -= 25;
+    y -= 22;
     
-    // Performance checkboxes
-    self.compressionButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 200, fieldHeight)];
+    // Performance checkboxes (Compression & Cache checked by default)
+    self.compressionButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 220, fieldHeight)];
     [self.compressionButton setTitle:@"Enable RDP Compression"];
     [self.compressionButton setButtonType:NSButtonTypeSwitch];
+    [self.compressionButton setState:NSControlStateValueOn]; // Enabled by default
     [self.advancedView addSubview:self.compressionButton];
-    y -= 25;
+    y -= 22;
     
-    self.persistentCachingButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 200, fieldHeight)];
+    self.persistentCachingButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 220, fieldHeight)];
     [self.persistentCachingButton setTitle:@"Persistent Bitmap Caching"];
     [self.persistentCachingButton setButtonType:NSButtonTypeSwitch];
+    [self.persistentCachingButton setState:NSControlStateValueOff]; // Disabled by default
     [self.advancedView addSubview:self.persistentCachingButton];
-    y -= 25;
+    y -= 22;
     
-    self.backingStoreButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 200, fieldHeight)];
+    self.backingStoreButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 220, fieldHeight)];
     [self.backingStoreButton setTitle:@"Use BackingStore"];
     [self.backingStoreButton setButtonType:NSButtonTypeSwitch];
     [self.advancedView addSubview:self.backingStoreButton];
-    y -= 25;
+    y -= 22;
     
-    self.forceBitmapUpdatesButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 200, fieldHeight)];
+    self.forceBitmapUpdatesButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 220, fieldHeight)];
     [self.forceBitmapUpdatesButton setTitle:@"Force Bitmap Updates"];
     [self.forceBitmapUpdatesButton setButtonType:NSButtonTypeSwitch];
     [self.advancedView addSubview:self.forceBitmapUpdatesButton];
-    y -= 40;
+    y -= 30;
     
-    // Input Options Section (continues in left column)
-    y = startY - 300;
-    NSTextField *inputLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, 200, fieldHeight)];
-    [inputLabel setStringValue:@"Input Options"];
-    [inputLabel setBezeled:NO];
-    [inputLabel setDrawsBackground:NO];
-    [inputLabel setEditable:NO];
-    [inputLabel setSelectable:NO];
-    [inputLabel setFont:[NSFont boldSystemFontOfSize:13]];
-    [self.advancedView addSubview:inputLabel];
-    y -= 25;
-    
-    self.sendMotionEventsButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 180, fieldHeight)];
-    [self.sendMotionEventsButton setTitle:@"Send Motion Events"];
-    [self.sendMotionEventsButton setButtonType:NSButtonTypeSwitch];
-    [self.sendMotionEventsButton setState:NSControlStateValueOn]; // Default enabled
-    [self.advancedView addSubview:self.sendMotionEventsButton];
-    y -= 25;
-    
-    self.localMouseCursorButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 180, fieldHeight)];
-    [self.localMouseCursorButton setTitle:@"Use Local Mouse Cursor"];
-    [self.localMouseCursorButton setButtonType:NSButtonTypeSwitch];
-    [self.advancedView addSubview:self.localMouseCursorButton];
-    y -= 25;
-    
-    self.numlockSyncButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 180, fieldHeight)];
-    [self.numlockSyncButton setTitle:@"Numlock Synchronization"];
-    [self.numlockSyncButton setButtonType:NSButtonTypeSwitch];
-    [self.advancedView addSubview:self.numlockSyncButton];
-    y -= 25;
-    
-    self.disableRemoteCtrlButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 180, fieldHeight)];
-    [self.disableRemoteCtrlButton setTitle:@"Disable Remote Ctrl"];
-    [self.disableRemoteCtrlButton setButtonType:NSButtonTypeSwitch];
-    [self.advancedView addSubview:self.disableRemoteCtrlButton];
-    y -= 25;
-    
-    self.keepKeyBindingsButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, y, 180, fieldHeight)];
-    [self.keepKeyBindingsButton setTitle:@"Keep Key Bindings"];
-    [self.keepKeyBindingsButton setButtonType:NSButtonTypeSwitch];
-    [self.advancedView addSubview:self.keepKeyBindingsButton];
-    y -= 40;
-    
-    // Application Options
-    NSTextField *appLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, 200, fieldHeight)];
-    [appLabel setStringValue:@"Application Options"];
-    [appLabel setBezeled:NO];
-    [appLabel setDrawsBackground:NO];
-    [appLabel setEditable:NO];
-    [appLabel setSelectable:NO];
-    [appLabel setFont:[NSFont boldSystemFontOfSize:13]];
-    [self.advancedView addSubview:appLabel];
-    y -= 25;
-    
-    // Shell
-    NSTextField *shellLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
-    [shellLabel setStringValue:@"Shell/Application:"];
-    [shellLabel setBezeled:NO];
-    [shellLabel setDrawsBackground:NO];
-    [shellLabel setEditable:NO];
-    [shellLabel setSelectable:NO];
-    [self.advancedView addSubview:shellLabel];
-    
-    self.shellField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth, fieldHeight)];
-    [self.advancedView addSubview:self.shellField];
-    y -= 25;
-    
-    // Working directory
-    NSTextField *workdirLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
-    [workdirLabel setStringValue:@"Working Directory:"];
-    [workdirLabel setBezeled:NO];
-    [workdirLabel setDrawsBackground:NO];
-    [workdirLabel setEditable:NO];
-    [workdirLabel setSelectable:NO];
-    [self.advancedView addSubview:workdirLabel];
-    
-    self.workingDirField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth, fieldHeight)];
-    [self.advancedView addSubview:self.workingDirField];
-    y -= 25;
-    
-    // SeamlessRDP path
-    NSTextField *seamlessLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, labelWidth, fieldHeight)];
-    [seamlessLabel setStringValue:@"SeamlessRDP Path:"];
-    [seamlessLabel setBezeled:NO];
-    [seamlessLabel setDrawsBackground:NO];
-    [seamlessLabel setEditable:NO];
-    [seamlessLabel setSelectable:NO];
-    [self.advancedView addSubview:seamlessLabel];
-    
-    self.seamlessPathField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth, y, fieldWidth, fieldHeight)];
-    [self.advancedView addSubview:self.seamlessPathField];
-    y -= 25;
-    
-    // Right column protocol options
-    y = startY - 350;
-    
-    // Protocol Options
+    // Protocol Options Section (Right Column)
     NSTextField *protocolLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(rightColumn, y, 200, fieldHeight)];
     [protocolLabel setStringValue:@"Protocol Options"];
     [protocolLabel setBezeled:NO];
@@ -560,7 +479,7 @@ extern char g_keymapname[PATH_MAX];
     [protocolLabel setSelectable:NO];
     [protocolLabel setFont:[NSFont boldSystemFontOfSize:13]];
     [self.advancedView addSubview:protocolLabel];
-    y -= 25;
+    y -= 22;
     
     // RDP Version
     NSTextField *rdpVersionLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(rightColumn, y, 100, fieldHeight)];
@@ -575,7 +494,7 @@ extern char g_keymapname[PATH_MAX];
     [self.rdpVersionPopup addItemWithTitle:@"RDP 5"];
     [self.rdpVersionPopup addItemWithTitle:@"RDP 4"];
     [self.advancedView addSubview:self.rdpVersionPopup];
-    y -= 25;
+    y -= 22;
     
     // Local codepage
     NSTextField *codepageLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(rightColumn, y, 100, fieldHeight)];
@@ -588,22 +507,39 @@ extern char g_keymapname[PATH_MAX];
     
     self.localCodepageField = [[NSTextField alloc] initWithFrame:NSMakeRect(rightColumn + 100, y, 100, fieldHeight)];
     [self.advancedView addSubview:self.localCodepageField];
-    y -= 25;
+    y -= 22;
     
-    // Protocol checkboxes
-    self.consoleButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 150, fieldHeight)];
+    // Protocol Checkboxes (Right Column)
+    self.consoleButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 220, fieldHeight)];
     [self.consoleButton setTitle:@"Attach to Console"];
     [self.consoleButton setButtonType:NSButtonTypeSwitch];
     [self.advancedView addSubview:self.consoleButton];
-    y -= 25;
+    y -= 22;
     
-    self.verboseLoggingButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 150, fieldHeight)];
+    self.verboseLoggingButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 220, fieldHeight)];
     [self.verboseLoggingButton setTitle:@"Verbose Logging"];
     [self.verboseLoggingButton setButtonType:NSButtonTypeSwitch];
     [self.advancedView addSubview:self.verboseLoggingButton];
-    y -= 40;
+    y -= 22;
     
-    // Device Redirection (full width at bottom)
+    // Input/Key Bindings Checkboxes (moved to right column under protocol)
+    self.disableRemoteCtrlButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 220, fieldHeight)];
+    [self.disableRemoteCtrlButton setTitle:@"Disable Remote Ctrl"];
+    [self.disableRemoteCtrlButton setButtonType:NSButtonTypeSwitch];
+    [self.advancedView addSubview:self.disableRemoteCtrlButton];
+    y -= 22;
+    
+    self.keepKeyBindingsButton = [[NSButton alloc] initWithFrame:NSMakeRect(rightColumn, y, 220, fieldHeight)];
+    [self.keepKeyBindingsButton setTitle:@"Keep Key Bindings"];
+    [self.keepKeyBindingsButton setButtonType:NSButtonTypeSwitch];
+    [self.advancedView addSubview:self.keepKeyBindingsButton];
+    
+    // ----------------------------------------------------
+    // Bottom Section (Full Width)
+    // ----------------------------------------------------
+    y = 45;
+    
+    // Device Redirection
     NSTextField *deviceLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, 200, fieldHeight)];
     [deviceLabel setStringValue:@"Device Redirection"];
     [deviceLabel setBezeled:NO];
@@ -612,9 +548,9 @@ extern char g_keymapname[PATH_MAX];
     [deviceLabel setSelectable:NO];
     [deviceLabel setFont:[NSFont boldSystemFontOfSize:13]];
     [self.advancedView addSubview:deviceLabel];
-    y -= 25;
+    y -= 22;
     
-    NSTextField *deviceDescLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, 450, fieldHeight)];
+    NSTextField *deviceDescLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, 560, fieldHeight)];
     [deviceDescLabel setStringValue:@"Examples: clipboard:CLIPBOARD, disk:share=/path, printer:name"];
     [deviceDescLabel setBezeled:NO];
     [deviceDescLabel setDrawsBackground:NO];
@@ -625,7 +561,7 @@ extern char g_keymapname[PATH_MAX];
     [self.advancedView addSubview:deviceDescLabel];
     y -= 20;
     
-    self.deviceRedirectionField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, 450, fieldHeight)];
+    self.deviceRedirectionField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, y, 560, fieldHeight)];
     [self.advancedView addSubview:self.deviceRedirectionField];
 }
 

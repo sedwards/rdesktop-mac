@@ -437,7 +437,8 @@ mac_fatal(char *format, ...)
         NSLog(@"[macOS DEBUG] RDPWindow: super initWithContentRect successful");
 
         [self setDelegate:self];
-        NSLog(@"[macOS DEBUG] RDPWindow: Window delegate set");
+        [self setSharingType:NSWindowSharingReadOnly];
+        NSLog(@"[macOS DEBUG] RDPWindow: Window delegate and sharingType set");
 
         NSLog(@"[macOS DEBUG] RDPWindow: Creating RDPView with frame origin=(%.0f,%.0f), size=(%.0fx%.0f)",
               contentRect.origin.x, contentRect.origin.y, contentRect.size.width, contentRect.size.height);
@@ -509,7 +510,7 @@ ui_init(void)
 
     NSLog(@"[macOS DEBUG] NSApplication initialized successfully");
 
-    g_colorspace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
+    g_colorspace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     if (!g_colorspace) {
         NSLog(@"[macOS ERROR] Failed to create color space");
         mac_fatal("Failed to create color space");

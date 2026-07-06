@@ -17,57 +17,58 @@ typedef struct {
 } mac_ssl_context;
 
 /* Initialize SSL */
+/* Initialize SSL */
 void
-ssl_sha1_init(SSL_SHA1 * sha1)
+rdssl_sha1_init(SSL_SHA1 * sha1)
 {
     // Stub for SHA1 initialization
     memset(sha1, 0, sizeof(SSL_SHA1));
 }
 
 void
-ssl_sha1_update(SSL_SHA1 * sha1, uint8 * data, uint32 len)
+rdssl_sha1_update(SSL_SHA1 * sha1, uint8 * data, uint32 len)
 {
     // Stub for SHA1 update
     (void)sha1; (void)data; (void)len;
 }
 
 void
-ssl_sha1_final(SSL_SHA1 * sha1, uint8 * out)
+rdssl_sha1_final(SSL_SHA1 * sha1, uint8 * out)
 {
     // Stub for SHA1 final
     (void)sha1; (void)out;
 }
 
 void
-ssl_md5_init(SSL_MD5 * md5)
+rdssl_md5_init(SSL_MD5 * md5)
 {
     // Stub for MD5 initialization
     memset(md5, 0, sizeof(SSL_MD5));
 }
 
 void
-ssl_md5_update(SSL_MD5 * md5, uint8 * data, uint32 len)
+rdssl_md5_update(SSL_MD5 * md5, uint8 * data, uint32 len)
 {
     // Stub for MD5 update
     (void)md5; (void)data; (void)len;
 }
 
 void
-ssl_md5_final(SSL_MD5 * md5, uint8 * out)
+rdssl_md5_final(SSL_MD5 * md5, uint8 * out)
 {
     // Stub for MD5 final
     (void)md5; (void)out;
 }
 
 void
-ssl_rc4_set_key(SSL_RC4 * rc4, uint8 * key, uint32 len)
+rdssl_rc4_set_key(SSL_RC4 * rc4, uint8 * key, uint32 len)
 {
     // Stub for RC4 key setup
     (void)rc4; (void)key; (void)len;
 }
 
 void
-ssl_rc4_crypt(SSL_RC4 * rc4, uint8 * in, uint8 * out, uint32 len)
+rdssl_rc4_crypt(SSL_RC4 * rc4, uint8 * in, uint8 * out, uint32 len)
 {
     // Stub for RC4 encryption/decryption
     (void)rc4; (void)in; (void)out; (void)len;
@@ -78,7 +79,7 @@ ssl_rc4_crypt(SSL_RC4 * rc4, uint8 * in, uint8 * out, uint32 len)
 }
 
 RD_BOOL
-ssl_rsa_encrypt(uint8 * out, uint8 * in, int len, uint32 modulus_size, uint8 * modulus, uint8 * exponent)
+rdssl_rsa_encrypt(uint8 * out, uint8 * in, int len, uint32 modulus_size, uint8 * modulus, uint8 * exponent)
 {
     // Stub for RSA encryption using Security framework
     (void)out; (void)in; (void)len; (void)modulus_size; (void)modulus; (void)exponent;
@@ -89,7 +90,7 @@ ssl_rsa_encrypt(uint8 * out, uint8 * in, int len, uint32 modulus_size, uint8 * m
 }
 
 SSL_CERT *
-ssl_cert_read(uint8 * data, uint32 len)
+rdssl_cert_read(uint8 * data, uint32 len)
 {
     // Create certificate structure using Security framework
     SSL_CERT *cert = malloc(sizeof(SSL_CERT));
@@ -120,7 +121,7 @@ ssl_cert_read(uint8 * data, uint32 len)
 }
 
 void
-ssl_cert_free(SSL_CERT * cert)
+rdssl_cert_free(SSL_CERT * cert)
 {
     if (cert) {
         if (cert->cert_info) {
@@ -131,7 +132,7 @@ ssl_cert_free(SSL_CERT * cert)
 }
 
 SSL_RKEY *
-ssl_cert_to_rkey(SSL_CERT * cert, uint32 * key_len)
+rdssl_cert_to_rkey(SSL_CERT * cert, uint32 * key_len)
 {
     if (!cert || !cert->cert_info) {
         return NULL;
@@ -150,7 +151,7 @@ ssl_cert_to_rkey(SSL_CERT * cert, uint32 * key_len)
 }
 
 void
-ssl_rkey_free(SSL_RKEY * rkey)
+rdssl_rkey_free(SSL_RKEY * rkey)
 {
     if (rkey) {
         free(rkey);
@@ -159,14 +160,14 @@ ssl_rkey_free(SSL_RKEY * rkey)
 
 /* Stub functions for any other SSL operations */
 int
-ssl_rkey_get_exp_mod(SSL_RKEY * rkey, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
+rdssl_rkey_get_exp_mod(SSL_RKEY * rkey, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
 {
     (void)rkey; (void)exponent; (void)max_exp_len; (void)modulus; (void)max_mod_len;
     return 0;
 }
 
 RD_BOOL
-ssl_cert_verify(SSL_CERT * server_cert, SSL_CERT * cacert)
+rdssl_cert_verify(SSL_CERT * server_cert, SSL_CERT * cacert)
 {
     (void)server_cert; (void)cacert;
     // For testing, always return true
@@ -174,28 +175,28 @@ ssl_cert_verify(SSL_CERT * server_cert, SSL_CERT * cacert)
 }
 
 int
-ssl_rkey_get_dword(SSL_RKEY * rkey, const char * name, uint8 * buf)
+rdssl_rkey_get_dword(SSL_RKEY * rkey, const char * name, uint8 * buf)
 {
     (void)rkey; (void)name; (void)buf;
     return 0;
 }
 
 void
-ssl_hmac_md5(const void *key, int key_len, const unsigned char *data, int data_len, unsigned char *result)
+rdssl_hmac_md5(const void *key, int key_len, const unsigned char *data, int data_len, unsigned char *result)
 {
     (void)key; (void)key_len; (void)data; (void)data_len; (void)result;
     // Stub implementation
 }
 
 void 
-ssl_sig_sha1(SSL_CERT * cert, int len, uint8 * data, uint8 * hash)
+rdssl_sig_sha1(SSL_CERT * cert, int len, uint8 * data, uint8 * hash)
 {
     (void)cert; (void)len; (void)data; (void)hash;
     // Stub implementation
 }
 
 RD_BOOL
-ssl_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len,
+rdssl_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len,
            uint8 * signature, uint32 sig_len)
 {
     (void)exponent; (void)exp_len; (void)modulus; (void)mod_len; (void)signature; (void)sig_len;
@@ -204,7 +205,7 @@ ssl_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len,
 }
 
 RD_BOOL
-ssl_certs_ok(SSL_CERT * server_cert, SSL_CERT * cacert)
+rdssl_certs_ok(SSL_CERT * server_cert, SSL_CERT * cacert)
 {
     (void)server_cert; (void)cacert;
     // Stub implementation - assume certificates are valid
@@ -213,13 +214,13 @@ ssl_certs_ok(SSL_CERT * server_cert, SSL_CERT * cacert)
 
 /* Initialize SSL library */
 void
-ssl_lib_init(void)
+rdssl_lib_init(void)
 {
     // Nothing needed for Security framework
 }
 
 void
-ssl_lib_cleanup(void)
+rdssl_lib_cleanup(void)
 {
     // Nothing needed for Security framework
 }

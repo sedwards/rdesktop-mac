@@ -50,3 +50,13 @@ Terminal Services enabled, or there is a firewall blocking access.
 
 You can also specify a number of options on the command line.  These are listed
 in the rdesktop manual page (run `man rdesktop`).
+
+---- Update for rdesktop-mac port ---
+SVG Icon thanks to
+Remote Desktop SVG Vector
+
+Free Download Remote Desktop SVG vector file in monocolor and multicolor type for Sketch and Figma from Remote Desktop Vectors svg vector collection. Remote Desktop Vectors SVG vector illustration graphic art design format.
+
+    COLLECTION: Puppylinux Interface Icons
+    LICENSE: PD License
+    AUTHOR: puppylinux
