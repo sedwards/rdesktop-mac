@@ -1,111 +1,117 @@
 # Building rdesktop-mac Natively on macOS
 
-This document provides step-by-step instructions for building the native macOS port of `rdesktop` (`rdesktop-mac`).
+This document provides step-by-step instructions for building the native macOS port of `rdesktop` (`rdesktop-mac`) as a self-contained application bundle.
 
 ---
 
-## TLS Engine Options
+## 1. TLS Engine Options
 
-The macOS port supports two separate security/TLS engines:
+The macOS port supports three compilation pathways for security and TLS handshakes:
 
-### A. OpenSSL 3.x Engine (Recommended)
-* **Description**: Links against Homebrew's modern OpenSSL library.
-* **Pros**: Outstanding connection stability, robust TLS state management, standard compliance, and highly verbose diagnostics.
-* **Requirements**: OpenSSL version 3.
+### A. Locally Bundled Static OpenSSL 3.x (Recommended)
+* **Description**: Compiles a local static version of OpenSSL 3.0.15 and links it directly into the application.
+* **Pros**: Standard compliance, connection stability, and **zero runtime dependencies**. The resulting `.app` bundle is fully portable and does not require Homebrew to be installed on the client machine.
 
-### B. Secure Transport Engine (Dependency-Free)
-* **Description**: Uses Apple's native `Security.framework` (`SSLHandshake`, `SSLRead`, `SSLWrite`) directly.
-* **Pros**: Light footprint, requires zero external libraries or package managers.
+### B. Homebrew Shared OpenSSL 3.x
+* **Description**: Links dynamically against the host machine's Homebrew installation of OpenSSL 3.
+* **Pros**: Faster initial build if Homebrew is already installed.
+* **Cons**: The built application will fail to launch on machines without Homebrew or the exact same `openssl@3` package version.
 
----
-
-## Build Prerequisites
-
-1. **Xcode Command Line Tools** (Required for both methods):
-   Install them by running:
-   ```bash
-   xcode-select --install
-   ```
+### C. Native Secure Transport Engine (Dependency-Free)
+* **Description**: Uses Apple's native legacy `Security.framework` (`SSLHandshake`, `SSLRead`, `SSLWrite`) directly.
+* **Pros**: Smallest binary footprint; requires zero external libraries.
 
 ---
 
-## Compilation Instructions
+## 2. Build Prerequisites
 
-The build system utilizes a standard `Makefile`. You can build for either engine:
-
-### 1. Compile with OpenSSL (Recommended)
-
-To compile using the modern OpenSSL 3.x engine (uses `-DUSE_OPENSSL` and links against Homebrew's OpenSSL paths):
-
-Configure the `Makefile` CFLAGS and LDFLAGS (this is configured in the default `Makefile` of this workspace):
-```makefile
-CFLAGS  += -DUSE_OPENSSL -I/usr/local/opt/openssl@3/include
-LDFLAGS += -L/usr/local/opt/openssl@3/lib -lssl -lcrypto
+Ensure you have the **Xcode Command Line Tools** installed:
+```bash
+xcode-select --install
 ```
 
-Clean and build:
+---
+
+## 3. Step-by-Step Build Instructions (Recommended Static Pathway)
+
+Follow these steps to build the self-contained `rdesktop-mac.app` bundle:
+
+### Step 3.1: Compile the Local Static OpenSSL Dependency
+Navigate to the included OpenSSL source directory, configure it for static compilation, build it, and perform a local installation:
+
+```bash
+cd deps/openssl-3.0.15
+
+# Configure OpenSSL for static libraries only (no shared objects, no tests)
+./Configure no-shared no-tests-t --prefix=/Users/sedwards/source/rdesktop-mac/deps/openssl_build
+
+# Compile and install OpenSSL to the local prefix path
+make -j$(sysctl -n hw.ncpu)
+make install_sw
+
+cd ../..
+```
+
+### Step 3.2: Configure the rdesktop Workspace
+Generate the Makefiles for the project. The configuration script will automatically detect the static OpenSSL headers and libraries inside `deps/openssl_build`:
+
+```bash
+./configure
+```
+
+### Step 3.3: Rebuild and Package the App Bundle
+Clean the build directory and package the client. This builds the `rdesktop-mac` binary, rasterizes the SVG icon, converts it to a standard macOS `.icns` file, and assembles the `.app` bundle:
+
 ```bash
 make clean
-make
+make bundle
 ```
+
+This compiles `rdesktop-mac.app` in the root of the workspace.
 
 ---
 
-### 2. Compile with Native Secure Transport (Dependency-Free)
+## 4. Automatic App Icon Generation
 
-To compile without Homebrew dependencies using macOS native Secure Transport, remove `-DUSE_OPENSSL`, the OpenSSL include paths, and `-lssl -lcrypto` links:
+When you run `make bundle`, the build system automatically converts the vector SVG icon:
 
-```makefile
-CFLAGS  = -O2 -Wall -Wextra -mmacosx-version-min=10.15 -DHAVE_CONFIG_H -DKEYMAP_PATH=\"$(KEYMAP_PATH)\"
-LDFLAGS = -mmacosx-version-min=10.15 -framework Kerberos -liconv -framework Cocoa -framework CoreGraphics -framework Carbon -framework Security
-```
+1. **SVG Rasterization**: Checks for `Resources/rdesktop-mac.svg` and uses the native macOS QuickLook utility (`qlmanage`) to render a high-resolution `512x512` PNG.
+2. **ICNS Packaging**: Compiles and runs `make_icns.m` (using native `AppKit` APIs) to resize the PNG into standard macOS retina configurations (`16x16` up to `512x512 @2x`) under a temporary `.iconset` directory.
+3. **Compilation**: Invokes Apple's native `iconutil` compiler to output `rdesktop-mac.icns` directly into the bundle's `Contents/Resources/` folder.
+4. **Registration**: Writes the `<key>CFBundleIconFile</key><string>rdesktop-mac.icns</string>` entry into the generated `Info.plist` to register the custom icon.
 
-Clean and build:
+---
+
+## 5. Running the Client
+
+To launch the connection dialog graphical user interface:
 ```bash
-make clean
-make
+open rdesktop-mac.app
 ```
 
----
-
-## Running the Client
-
-Upon successful compilation, the output binary `rdesktop-mac` will be generated in the root directory:
-
+To run directly from the command line inside the bundle:
 ```bash
-./rdesktop-mac -u <username> -p <password> <host_ip>:3389
+./rdesktop-mac.app/Contents/MacOS/rdesktop-mac -u <username> -p <password> <host_ip>:3389
 ```
 
 ---
 
-## Future Packaging & Bundling Plans
+## 6. Developer Reference: Key Customizations
 
-To deliver `rdesktop-mac` as a self-contained, standard macOS `.app` bundle, the project aims to remove the runtime dependency on Homebrew's OpenSSL. 
+### A. Color Representation (BGRA / BGRX Native Alignment)
+RDP pixel color bytes are organized in BGRX/BGRA memory layouts (`Blue, Green, Red, Alpha/Skip`).
+* **The Fix**: To avoid Red/Blue color channel swapping or green/blue tinting, the macOS display contexts, bitmaps, and backing store contexts in `macwin.m` are created with:
+  `kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little`
+* **Why `NoneSkipFirst`**: In big-endian formats, the `Skip` byte is first. When combined with `kCGBitmapByteOrder32Little`, CoreGraphics reverses the byte order, placing the `Skip` byte at the end of the address block (`Byte 3`), perfectly matching the little-endian BGRX memory stream.
 
-### Planned Migration:
-* **Bundled Cryptography**: Compile and embed static libraries of **OpenSSL** inside the application bundle (e.g. under `rdesktop-mac.app/Contents/Frameworks/`).
-* **Zero Host Prerequisites**: This will remove the requirement for end users to have Homebrew or `/usr/local/opt/openssl@3` installed, enabling a simple drag-and-drop installation.
+### B. Mouse Coordinate Precision
+To handle High-DPI/Retina scaling and OS window clamping symmetrically:
+* **The Fix**: Coordinates inside `macwin.m` mouse event handlers are converted from view-relative points using a translation matrix:
+  ```objc
+  double scaleX = (double)g_width / bounds.size.width;
+  double scaleY = (double)g_height / bounds.size.height;
+  ```
+  This maps the mouse inputs accurately onto the RDP session's exact pixel matrix.
 
-## Errata
-Intel port may have to be reverted for m4 rebuild
-
-  ### The Root Cause & Color Space Correction
-
-  Why it was still off: The pixel color bytes coming from RDP are packed in  BGRA  /  BGRX  order in memory ( Blue, Green, Red, Alpha/Skip ).
-  
-  The BitmapInfo Mismatch:
-      • kCGImageAlphaNoneSkipLast  in big-endian is  RGBA  ( Red (0), Green (1), Blue (2), Skip (3) ).
-      • However, when we applied  kCGBitmapByteOrder32Little  to it, the byte order was fully reversed by CoreGraphics to  ABGR  /  XBGR  ( Skip (0), Blue (1), Green (2), Red
-      (3) ).
-      
-      • This meant Byte 0 (where we write  Blue ) was treated as the  Skip  byte (discarded!), while Byte 3 (where we write  0  for the unused byte) was treated as  Red 
-      (rendering Red as  0 ).
-      • As a result, the red channel was zeroed out, causing whites to appear as a light blue-green (cyan) tint and making the entire screen look dark and washed out.
-      
-  The Solution:
-      Changed the bitmap info configuration in macwin.m (across the backing store context, image creation, and bitmap creation functions) to  kCGImageAlphaNoneSkipFirst |
-      kCGBitmapByteOrder32Little .
-      Under little-endian byte ordering,  NoneSkipFirst  reverses  Skip (0), Red (1), Green (2), Blue (3)  into  Blue (0), Green (1), Red (2), Skip (3) , which is the exact
-      BGRX layout of our RDP pixel stream.
-      
-      This correctly aligns the Red, Green, and Blue color channels. Whites are now solid white and the screen brightness is fully restored.
+### C. Redraw Artifact Mitigation
+* **The Fix**: `ui_paint_bitmap` and `ui_patblt` flag `g_view.needsRedraw = YES;` directly. This ensures the 60 FPS display refresh timer commits all new frames and pattern fills to the layer's contents instantly, eliminating drawing lag and lingering artifact blocks.
