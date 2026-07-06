@@ -117,6 +117,10 @@ To handle High-DPI/Retina scaling and OS window clamping symmetrically:
 * **The Fix**: `ui_paint_bitmap` and `ui_patblt` flag `g_view.needsRedraw = YES;` directly. This ensures the 60 FPS display refresh timer commits all new frames and pattern fills to the layer's contents instantly, eliminating drawing lag and lingering artifact blocks.
 
 ## 7. Errata
-Work on screen redraw flickering on the m4
-Work on screen artifacts and windows not being quickly repained
+- Work on screen redraw flickering on the m4
+- Work on screen artifacts and windows not being quickly repained
+- When disconnecting or logging off, don't repo connection failed
+- Resume research on NLMv2
+- Explore other performance optimizations
+
 
