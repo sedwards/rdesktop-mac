@@ -255,7 +255,7 @@ mac_fatal(char *format, ...)
         8,                                  // bitsPerComponent
         bytesPerRow,                        // bytesPerRow
         g_colorspace,                       // colorspace
-        kCGImageAlphaPremultipliedLast      // bitmapInfo
+        kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little      // bitmapInfo
     );
 
     if (!context) {
@@ -371,46 +371,58 @@ mac_fatal(char *format, ...)
     queue_input_event(EVENT_KEY, [event timestamp] * 1000, flags, scancode, 0);
 }
 
+- (NSPoint)translateMouseLocation:(NSPoint)locationInWindow {
+    NSPoint point = [self convertPoint:locationInWindow fromView:nil];
+    NSRect bounds = [self bounds];
+    if (bounds.size.width > 0 && bounds.size.height > 0) {
+        double scaleX = (double)g_width / bounds.size.width;
+        double scaleY = (double)g_height / bounds.size.height;
+        point.x = point.x * scaleX;
+        point.y = point.y * scaleY;
+    }
+    return point;
+}
+
 - (void)mouseDown:(NSEvent *)event {
-    NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+    NSPoint point = [self translateMouseLocation:[event locationInWindow]];
     int rdp_y = g_height - (int)point.y;
     queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_BUTTON1 | MOUSE_FLAG_DOWN, (int)point.x, rdp_y);
 }
 
 - (void)mouseUp:(NSEvent *)event {
-    NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+    NSPoint point = [self translateMouseLocation:[event locationInWindow]];
     int rdp_y = g_height - (int)point.y;
     queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_BUTTON1, (int)point.x, rdp_y);
 }
 
 - (void)rightMouseDown:(NSEvent *)event {
-    NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+    NSPoint point = [self translateMouseLocation:[event locationInWindow]];
     int rdp_y = g_height - (int)point.y;
     queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_BUTTON2 | MOUSE_FLAG_DOWN, (int)point.x, rdp_y);
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
-    NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+    NSPoint point = [self translateMouseLocation:[event locationInWindow]];
     int rdp_y = g_height - (int)point.y;
     queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_BUTTON2, (int)point.x, rdp_y);
 }
 
 - (void)mouseMoved:(NSEvent *)event {
     if (g_sendmotion) {
-        NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+        NSPoint point = [self translateMouseLocation:[event locationInWindow]];
         int rdp_y = g_height - (int)point.y;
         queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_MOVE, (int)point.x, rdp_y);
     }
 }
 
 - (void)mouseDragged:(NSEvent *)event {
-    NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+    NSPoint point = [self translateMouseLocation:[event locationInWindow]];
     int rdp_y = g_height - (int)point.y;
     queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_BUTTON1 | MOUSE_FLAG_MOVE, (int)point.x, rdp_y);
 }
 
 - (void)rightMouseDragged:(NSEvent *)event {
-    NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+    NSPoint point = [self translateMouseLocation:[event locationInWindow]];
     int rdp_y = g_height - (int)point.y;
     queue_input_event(EVENT_MOUSE, [event timestamp] * 1000, MOUSE_FLAG_BUTTON2 | MOUSE_FLAG_MOVE, (int)point.x, rdp_y);
 }
@@ -775,7 +787,7 @@ ui_create_bitmap(int width, int height, uint8 * data)
         8,                                  // bitsPerComponent
         width * 4,                          // bytesPerRow
         g_colorspace,                       // colorspace
-        kCGImageAlphaNoneSkipLast           // bitmapInfo
+        kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little // bitmapInfo
     );
     
     if (context && data) {
@@ -809,7 +821,7 @@ ui_paint_bitmap(int x, int y, int cx, int cy, int width, int height, uint8 * dat
         32,                                 // bitsPerPixel
         width * 4,                          // bytesPerRow
         g_colorspace,                       // colorspace
-        (CGBitmapInfo)kCGImageAlphaNoneSkipLast,          // bitmapInfo
+        (CGBitmapInfo)(kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little), // bitmapInfo
         dataProvider,                       // dataProvider
         NULL,                               // decode
         false,                              // shouldInterpolate
@@ -828,7 +840,7 @@ ui_paint_bitmap(int x, int y, int cx, int cy, int width, int height, uint8 * dat
 
     [g_view.backingStoreLock unlock];
 
-    // Mark view as needing display
+    g_view.needsRedraw = YES;
     dispatch_async(dispatch_get_main_queue(), ^{
         [g_view setNeedsDisplayInRect:NSMakeRect(x, y, cx, cy)];
     });
@@ -957,6 +969,7 @@ void ui_patblt(uint8 opcode, int x, int y, int cx, int cy, BRUSH * brush, uint32
             break;
     }
 
+    g_view.needsRedraw = YES;
     [g_view.backingStoreLock unlock];
 
     dispatch_async(dispatch_get_main_queue(), ^{
