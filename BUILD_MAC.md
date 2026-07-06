@@ -43,7 +43,7 @@ Navigate to the included OpenSSL source directory, configure it for static compi
 cd deps/openssl-3.0.15
 
 # Configure OpenSSL for static libraries only (no shared objects, no tests)
-./Configure no-shared no-tests-t --prefix=/Users/sedwards/source/rdesktop-mac/deps/openssl_build
+./Configure no-shared no-tests --prefix=/Users/sedwards/source/rdesktop-mac/deps/openssl_build
 
 # Compile and install OpenSSL to the local prefix path
 make -j$(sysctl -n hw.ncpu)
@@ -115,3 +115,8 @@ To handle High-DPI/Retina scaling and OS window clamping symmetrically:
 
 ### C. Redraw Artifact Mitigation
 * **The Fix**: `ui_paint_bitmap` and `ui_patblt` flag `g_view.needsRedraw = YES;` directly. This ensures the 60 FPS display refresh timer commits all new frames and pattern fills to the layer's contents instantly, eliminating drawing lag and lingering artifact blocks.
+
+## 7. Errata
+Work on screen redraw flickering on the m4
+Work on screen artifacts and windows not being quickly repained
+
