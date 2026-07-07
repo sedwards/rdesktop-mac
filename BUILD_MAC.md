@@ -12,11 +12,6 @@ The macOS port supports three compilation pathways for security and TLS handshak
 * **Description**: Compiles a local static version of OpenSSL 3.0.15 and links it directly into the application.
 * **Pros**: Standard compliance, connection stability, and **zero runtime dependencies**. The resulting `.app` bundle is fully portable and does not require Homebrew to be installed on the client machine.
 
-### B. Homebrew Shared OpenSSL 3.x
-* **Description**: Links dynamically against the host machine's Homebrew installation of OpenSSL 3.
-* **Pros**: Faster initial build if Homebrew is already installed.
-* **Cons**: The built application will fail to launch on machines without Homebrew or the exact same `openssl@3` package version.
-
 ### C. Native Secure Transport Engine (Dependency-Free)
 * **Description**: Uses Apple's native legacy `Security.framework` (`SSLHandshake`, `SSLRead`, `SSLWrite`) directly.
 * **Pros**: Smallest binary footprint; requires zero external libraries.

@@ -1,6 +1,6 @@
-# IMPORTANT: rdesktop is no longer maintained
+# IMPORTANT: Linux rdesktop is no longer maintained
 
-Please, beware that this project is no longer maintained and hadn't received
+Please, beware that the parent project is no longer maintained and hadn't received
 a patch in many years. There are reported security vulnerabilities, yet those
 haven't been reviewed.
 
@@ -30,15 +30,7 @@ The smart-card support module uses PCSC-lite. You should use PCSC-lite 1.2.9 or
 later. To enable smart-card support in the rdesktop add `--enable-smartcard` to
 the configure line.
 
-
-## Note for users building from source
-
-If you have retrieved a snapshot of the rdesktop source, you will first
-need to run `./bootstrap` in order to generate the build infrastructure.
-This is not necessary for release versions of rdesktop.
-
-
-## Usage
+## Usage (command line)
 
 Connect to an RDP server with:
 
@@ -50,6 +42,8 @@ Terminal Services enabled, or there is a firewall blocking access.
 
 You can also specify a number of options on the command line.  These are listed
 in the rdesktop manual page (run `man rdesktop`).
+
+## Usage macOS - Invoke the rdesktop-mac.app Application Bundle
 
 ---- Update for rdesktop-mac port ---
 SVG Icon thanks to Remote Desktop SVG Vector
