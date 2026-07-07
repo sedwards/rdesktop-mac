@@ -13,3 +13,4 @@ rdesktop-mac.app
 .DS_Store
 compile_err.log
 test_types
+*.d
