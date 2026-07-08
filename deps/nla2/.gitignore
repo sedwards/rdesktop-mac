@@ -1,0 +1,7 @@
+*.log
+*.o
+*.o.d
+*.dylib
+configure~
+autom4te.cache
+config.h.in~

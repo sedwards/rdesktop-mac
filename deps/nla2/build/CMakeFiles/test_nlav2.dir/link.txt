@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG -flto=thin -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/test_nlav2.dir/test_nlav2.c.o -o test_nlav2  -Wl,-rpath,/Users/sedwards/source/nlav2/build libnlav2.dylib
