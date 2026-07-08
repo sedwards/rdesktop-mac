@@ -44,8 +44,8 @@ Navigate to the nested OpenSSL source directory, configure it for static compila
 ```bash
 cd deps/nla2/deps/openssl-3.0.15
 
-# Configure OpenSSL for static libraries only (no shared objects, no tests)
-./Configure no-shared no-tests
+# Configure OpenSSL for static libraries only (no shared objects, no tests, no dynamic modules, enable legacy provider)
+./Configure no-shared no-tests no-module enable-legacy
 
 # Compile OpenSSL static libraries
 make -j$(sysctl -n hw.ncpu)

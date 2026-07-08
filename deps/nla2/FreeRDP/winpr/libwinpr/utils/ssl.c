@@ -326,6 +326,14 @@ static BOOL CALLBACK winpr_openssl_initialize(WINPR_ATTR_UNUSED PINIT_ONCE once,
 #endif
 
 #if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
+	/* Declare built-in provider entry points */
+	extern OSSL_provider_init_fn ossl_legacy_provider_init;
+	extern OSSL_provider_init_fn ossl_default_provider_init;
+
+	/* Register built-in providers */
+	OSSL_PROVIDER_add_builtin(nullptr, "legacy", ossl_legacy_provider_init);
+	OSSL_PROVIDER_add_builtin(nullptr, "default", ossl_default_provider_init);
+
 	/* The legacy provider is needed for MD4. */
 	s_winpr_openssl_provider_legacy = OSSL_PROVIDER_load(nullptr, "legacy");
 	if (s_winpr_openssl_provider_legacy == nullptr)
