@@ -16,8 +16,8 @@ KEYMAP_PATH = $(datadir)/rdesktop/keymaps/
 
 CC          = @CC@
 INSTALL     = @INSTALL@
-CFLAGS      = @CFLAGS@ @DEFS@ -DKEYMAP_PATH=\"$(KEYMAP_PATH)\" -DUSE_OPENSSL -I./deps/openssl_build/include
-LDFLAGS     = @LDFLAGS@ @LIBS@ -L./deps/openssl_build/lib -lssl -lcrypto
+CFLAGS      = @CFLAGS@ @DEFS@ -DKEYMAP_PATH=\"$(KEYMAP_PATH)\" -DUSE_OPENSSL -I./deps/openssl_build/include -I./deps/nla2
+LDFLAGS     = @LDFLAGS@ @LIBS@ -L./deps/openssl_build/lib -lssl -lcrypto ./deps/nla2/libnlav2.a -framework Foundation -framework CoreFoundation -lpthread -ldl
 STRIP       = @STRIP@
 
 TARGETS     = rdesktop-mac
@@ -31,7 +31,10 @@ MACOBJ   = mac_gui_main.o rdesktop_main.o rdp.o macwin.o mackeymap.o macclip.o M
 .PHONY: all
 all: $(TARGETS)
 
-rdesktop-mac: $(MACOBJ) $(SOUNDOBJ) $(RDPOBJ) $(SCARDOBJ) $(CREDSSPOBJ)
+./deps/nla2/libnlav2.a:
+	cd deps/nla2 && $(MAKE) libnlav2.a
+
+rdesktop-mac: $(MACOBJ) $(SOUNDOBJ) $(RDPOBJ) $(SCARDOBJ) $(CREDSSPOBJ) ./deps/nla2/libnlav2.a
 	$(CC) $(CFLAGS) -o rdesktop-mac $(MACOBJ) $(SOUNDOBJ) $(RDPOBJ) $(SCARDOBJ) $(CREDSSPOBJ) $(LDFLAGS) -framework Cocoa -framework CoreGraphics -framework Carbon -framework Security
 
 .PHONY: install
@@ -63,6 +66,7 @@ installkeymaps:
 clean:
 	rm -f *.o *~ rdesktop-mac rdesktop
 	rm -rf 3rdparty/*.o 3rdparty/*/*.o 3rdparty/*/*.a 3rdparty/*/*.la rdesktop-mac.app
+	if [ -f deps/nla2/Makefile ]; then cd deps/nla2 && $(MAKE) clean; fi
 
 .PHONY: bundle
 bundle: rdesktop-mac

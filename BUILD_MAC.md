@@ -27,11 +27,18 @@ xcode-select --install
 
 ---
 
-## 3. Step-by-Step Build Instructions (Recommended Static Pathway)
+## 3. Build Instructions
 
-Follow these steps to build the self-contained `rdesktop-mac.app` bundle:
+### A. The Automated Pathway (Recommended)
+We provide an automated build script `build_mac.sh` that compiles the local OpenSSL dependency, configures the workspace, builds the `libnlav2.a` authentication engine, and compiles the final application bundle in one command:
 
-### Step 3.1: Compile the Local Static OpenSSL Dependency
+```bash
+./build_mac.sh
+```
+
+### B. The Step-by-Step Manual Pathway
+
+#### Step 3.1: Compile the Local Static OpenSSL Dependency
 Navigate to the included OpenSSL source directory, configure it for static compilation, build it, and perform a local installation:
 
 ```bash
@@ -47,15 +54,15 @@ make install_sw
 cd ../..
 ```
 
-### Step 3.2: Configure the rdesktop Workspace
-Generate the Makefiles for the project. The configuration script will automatically detect the static OpenSSL headers and libraries inside `deps/openssl_build`:
+#### Step 3.2: Configure the Workspace
+Generate the Makefiles for the project. The configuration script will automatically detect the static OpenSSL headers and libraries inside `deps/openssl_build` and set up compilation targets:
 
 ```bash
 ./configure
 ```
 
-### Step 3.3: Rebuild and Package the App Bundle
-Clean the build directory and package the client. This builds the `rdesktop-mac` binary, rasterizes the SVG icon, converts it to a standard macOS `.icns` file, and assembles the `.app` bundle:
+#### Step 3.3: Rebuild and Package the App Bundle
+Clean the build directory and package the client. This compiles the static authentication engine `libnlav2.a`, links it with `rdesktop-mac`, rasterizes the SVG icon, and assembles the `.app` bundle:
 
 ```bash
 make clean
