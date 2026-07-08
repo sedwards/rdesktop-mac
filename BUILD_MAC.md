@@ -39,30 +39,29 @@ We provide an automated build script `build_mac.sh` that compiles the local Open
 ### B. The Step-by-Step Manual Pathway
 
 #### Step 3.1: Compile the Local Static OpenSSL Dependency
-Navigate to the included OpenSSL source directory, configure it for static compilation, build it, and perform a local installation:
+Navigate to the nested OpenSSL source directory, configure it for static compilation, and compile it:
 
 ```bash
-cd deps/openssl-3.0.15
+cd deps/nla2/deps/openssl-3.0.15
 
 # Configure OpenSSL for static libraries only (no shared objects, no tests)
-./Configure no-shared no-tests --prefix=/Users/sedwards/source/rdesktop-mac/deps/openssl_build
+./Configure no-shared no-tests
 
-# Compile and install OpenSSL to the local prefix path
+# Compile OpenSSL static libraries
 make -j$(sysctl -n hw.ncpu)
-make install_sw
 
-cd ../..
+cd ../../../..
 ```
 
 #### Step 3.2: Configure the Workspace
-Generate the Makefiles for the project. The configuration script will automatically detect the static OpenSSL headers and libraries inside `deps/openssl_build` and set up compilation targets:
+Generate the Makefiles for the project:
 
 ```bash
 ./configure
 ```
 
 #### Step 3.3: Rebuild and Package the App Bundle
-Clean the build directory and package the client. This compiles the static authentication engine `libnlav2.a`, links it with `rdesktop-mac`, rasterizes the SVG icon, and assembles the `.app` bundle:
+Clean the build directory and package the client. This compiles the static authentication engine `libnlav2.a` (which links against the nested OpenSSL), links it with `rdesktop-mac`, rasterizes the SVG icon, and assembles the `.app` bundle:
 
 ```bash
 make clean
