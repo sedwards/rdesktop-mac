@@ -1119,3 +1119,4 @@ deps/nla2/deps/openssl-3.0.15//apps/openssl-bin-fipsinstall.d
 deps/nla2/deps/openssl-3.0.15//apps/openssl-bin-engine.d
 deps/nla2/deps/openssl-3.0.15//apps/openssl-bin-passwd.d
 deps/nla2/deps/openssl-3.0.15//apps/openssl-bin-nseq.d
+.aider*
