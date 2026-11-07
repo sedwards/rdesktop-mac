@@ -27,6 +27,12 @@ case "$host_os" in
     ;;
 esac
 
+AS_IF([test "$PLATFORM" = linux], [
+  AC_CHECK_HEADER([sys/timerfd.h], [
+    PLATFORM_DEFS="$PLATFORM_DEFS -DWINPR_HAVE_SYS_TIMERFD_H"
+  ])
+])
+
 AC_SUBST([PLATFORM])
 AC_SUBST([WINPR_TIMEZONE_FILE])
 AC_SUBST([PLATFORM_DEFS])
@@ -64,6 +70,14 @@ AC_CHECK_LIB([dl], [dlopen], [
     DL_LIBS=""
 ])
 AC_SUBST([DL_LIBS])
+
+# Codecs included in the shared library also need zlib and libm.
+AC_SEARCH_LIBS([compress], [z], [], [
+    AC_MSG_ERROR([zlib is required (Debian/Ubuntu: zlib1g-dev)])
+])
+AC_SEARCH_LIBS([pow], [m], [], [
+    AC_MSG_ERROR([the system math library is required])
+])
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h stddef.h stdlib.h string.h sys/socket.h unistd.h openssl/evp.h])

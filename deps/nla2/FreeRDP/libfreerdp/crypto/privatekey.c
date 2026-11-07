@@ -413,7 +413,7 @@ BOOL freerdp_key_generate(rdpPrivateKey* key, const char* type, size_t count, ..
 
 	if (!type)
 	{
-		WLog_ERR(TAG, "Invalid argument type=%s", type);
+		WLog_ERR(TAG, "Invalid argument: type is NULL");
 		return FALSE;
 	}
 	if (strncmp("RSA", type, 4) != 0)

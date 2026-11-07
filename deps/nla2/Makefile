@@ -4,10 +4,10 @@ srcdir = .
 
 
 CC = gcc
-CFLAGS = -g -O2 -std=gnu11 -fPIC -fvisibility=hidden -fno-omit-frame-pointer -Wredundant-decls -fsigned-char -Wimplicit-function-declaration
+CFLAGS = -g -O2 -std=gnu11 -fPIC -fvisibility=hidden -fno-omit-frame-pointer -Wredundant-decls -fsigned-char -Wimplicit-function-declaration -Werror
 CPPFLAGS = 
 LDFLAGS = 
-LIBS = 
+LIBS = -lm -lz 
 
 OPENSSL_CFLAGS = -I$(srcdir)/deps/openssl-3.0.15/include
 OPENSSL_LIBS = $(srcdir)/deps/openssl-3.0.15/libssl.a $(srcdir)/deps/openssl-3.0.15/libcrypto.a
@@ -19,6 +19,9 @@ SHLIB_FLAGS = -shared -fPIC
 
 # Include the source files lists
 include Makefile.sources
+
+# The deprecated ER/DER wrappers are excluded with the 3.x compatibility APIs.
+FREERDP_SOURCES := $(filter-out %/crypto/er.c %/crypto/der.c,$(FREERDP_SOURCES))
 
 PLATFORM = linux
 ifeq ($(PLATFORM),linux)
@@ -55,6 +58,8 @@ INCLUDES = -I$(srcdir)/FreeRDP/winpr/include \
            $(OPENSSL_CFLAGS)
 
 DEFS = -DFREERDP_EXPORTS \
+       -DWITHOUT_FREERDP_3x_DEPRECATED \
+       -DWITHOUT_WINPR_3x_DEPRECATED \
        -DNONAMELESSUNION \
        -DUSE_EXECINFO \
        -DUSE_UNWIND \
@@ -71,7 +76,7 @@ DEFS = -DFREERDP_EXPORTS \
        -DWITH_SMARTCARD_PCSC \
        -DWITH_TIMEZONE_COMPILED \
        -DWITH_VERBOSE_WINPR_ASSERT \
-       -D_DEFAULT_SOURCE \
+       -D_DEFAULT_SOURCE -DWINPR_HAVE_SYS_TIMERFD_H \
        -D_POSIX_C_SOURCE=200809L \
        -Dwinpr_EXPORTS \
        -Dfreerdp_EXPORTS \
@@ -91,6 +96,7 @@ $(LIB_TARGET): $(ALL_OBJS)
 	$(CC) $(SHLIB_FLAGS) $(LDFLAGS) -o $@ $(ALL_OBJS) $(OPENSSL_LIBS) $(PTHREAD_LIBS) $(DL_LIBS) $(LIBS)
 
 $(STATIC_TARGET): $(ALL_OBJS)
+	$(RM) $@
 	ar rcs $@ $(ALL_OBJS)
 
 $(TEST_TARGET): test_nlav2.o $(STATIC_TARGET)

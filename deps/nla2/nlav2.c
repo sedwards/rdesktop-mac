@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 struct rdp_transport
 {
@@ -103,7 +104,8 @@ static BOOL client_get_public_key(rdpTransport* transport, const BYTE** data, DW
 
 nlav2_client_context_t* nlav2_client_new(const char* hostname, const char* username, const char* password, const char* domain)
 {
-	winpr_InitializeSSL(WINPR_SSL_INIT_DEFAULT);
+	if (!winpr_InitializeSSL(WINPR_SSL_INIT_DEFAULT))
+		return NULL;
 
 	nlav2_client_context_t* ctx = calloc(1, sizeof(nlav2_client_context_t));
 	if (!ctx)
@@ -121,14 +123,17 @@ nlav2_client_context_t* nlav2_client_new(const char* hostname, const char* usern
 		return NULL;
 	}
 
-	freerdp_set_io_callback_context(ctx->rdpcontext, ctx);
-
 	rdpSettings* settings = ctx->rdpcontext->settings;
-	freerdp_settings_set_bool(settings, FreeRDP_ServerMode, FALSE);
-	freerdp_settings_set_string(settings, FreeRDP_ServerHostname, hostname);
-	freerdp_settings_set_string(settings, FreeRDP_Username, username);
-	freerdp_settings_set_string(settings, FreeRDP_Password, password);
-	freerdp_settings_set_string(settings, FreeRDP_Domain, domain);
+	if (!freerdp_set_io_callback_context(ctx->rdpcontext, ctx) ||
+	    !freerdp_settings_set_bool(settings, FreeRDP_ServerMode, FALSE) ||
+	    !freerdp_settings_set_string(settings, FreeRDP_ServerHostname, hostname) ||
+	    !freerdp_settings_set_string(settings, FreeRDP_Username, username) ||
+	    !freerdp_settings_set_string(settings, FreeRDP_Password, password) ||
+	    !freerdp_settings_set_string(settings, FreeRDP_Domain, domain))
+	{
+		nlav2_client_free(ctx);
+		return NULL;
+	}
 
 	ctx->transport = transport_new(ctx->rdpcontext);
 	if (!ctx->transport)
@@ -284,7 +289,8 @@ static int server_write_pdu(rdpTransport* transport, wStream* s)
 	memcpy(ctx->output_token, Stream_Buffer(s), len);
 	ctx->output_token_len = (unsigned int)len;
 
-	ReleaseSemaphore(ctx->sem_output_ready, 1, NULL);
+	if (!ReleaseSemaphore(ctx->sem_output_ready, 1, NULL))
+		return -1;
 
 	return (int)len;
 }
@@ -320,7 +326,8 @@ static int server_read_pdu(rdpTransport* transport, wStream* s)
 
 	Stream_Write(s, ctx->input_token, ctx->input_token_len);
 	Stream_SealLength(s);
-	Stream_SetPosition(s, 0);
+	if (!Stream_SetPosition(s, 0))
+		return -1;
 
 	return (int)ctx->input_token_len;
 }
@@ -340,7 +347,12 @@ static DWORD WINAPI server_auth_thread_func(LPVOID lpParam)
 		ctx->auth_failed = TRUE;
 	}
 
-	ReleaseSemaphore(ctx->sem_output_ready, 1, NULL);
+	if (!ReleaseSemaphore(ctx->sem_output_ready, 1, NULL) &&
+	    GetLastError() != ERROR_TOO_MANY_POSTS)
+	{
+		ctx->auth_failed = TRUE;
+		return 1;
+	}
 
 	return 0;
 }
@@ -349,7 +361,8 @@ static DWORD WINAPI server_auth_thread_func(LPVOID lpParam)
 
 nlav2_server_context_t* nlav2_server_new(const unsigned char* server_pubkey, unsigned int server_pubkey_len)
 {
-	winpr_InitializeSSL(WINPR_SSL_INIT_DEFAULT);
+	if (!winpr_InitializeSSL(WINPR_SSL_INIT_DEFAULT))
+		return NULL;
 
 	nlav2_server_context_t* ctx = calloc(1, sizeof(nlav2_server_context_t));
 	if (!ctx)
@@ -382,10 +395,13 @@ nlav2_server_context_t* nlav2_server_new(const unsigned char* server_pubkey, uns
 	}
 
 	ctx->rdpcontext = ctx->peer->context;
-	freerdp_set_io_callback_context(ctx->rdpcontext, ctx);
-
 	rdpSettings* settings = ctx->rdpcontext->settings;
-	freerdp_settings_set_bool(settings, FreeRDP_ServerMode, TRUE);
+	if (!freerdp_set_io_callback_context(ctx->rdpcontext, ctx) ||
+	    !freerdp_settings_set_bool(settings, FreeRDP_ServerMode, TRUE))
+	{
+		nlav2_server_free(ctx);
+		return NULL;
+	}
 
 	ctx->transport = transport_new(ctx->rdpcontext);
 	if (!ctx->transport)
@@ -434,7 +450,8 @@ int nlav2_server_process_token(nlav2_server_context_t* ctx, const unsigned char*
 	ctx->input_token_len = in_len;
 	ctx->output_token_len = 0;
 
-	ReleaseSemaphore(ctx->sem_input_ready, 1, NULL);
+	if (!ReleaseSemaphore(ctx->sem_input_ready, 1, NULL))
+		return -1;
 
 	WaitForSingleObject(ctx->sem_output_ready, INFINITE);
 
@@ -489,7 +506,9 @@ void nlav2_server_free(nlav2_server_context_t* ctx)
 		return;
 
 	ctx->auth_failed = TRUE;
-	ReleaseSemaphore(ctx->sem_input_ready, 1, NULL);
+	if (ctx->thread && !ReleaseSemaphore(ctx->sem_input_ready, 1, NULL) &&
+	    GetLastError() != ERROR_TOO_MANY_POSTS)
+		fprintf(stderr, "nlav2_server_free: failed to wake authentication thread\n");
 
 	if (ctx->thread)
 	{

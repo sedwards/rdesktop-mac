@@ -30,6 +30,7 @@ WINPR_PRAGMA_DIAG_IGNORED_UNUSED_MACRO
 WINPR_PRAGMA_DIAG_POP
 
 #include <stdio.h>
+#include <errno.h>
 #include <string.h>
 #include <fcntl.h>
 
@@ -160,7 +161,20 @@ void winpr_backtrace_symbols_fd(void* buffer, int fd)
 			return;
 
 		for (size_t i = 0; i < used; i++)
-			(void)_write(fd, lines[i], (unsigned)strnlen(lines[i], LINE_LENGTH_MAX));
+		{
+			const char* line = lines[i];
+			size_t remaining = strnlen(line, LINE_LENGTH_MAX);
+			while (remaining > 0)
+			{
+				const int written = _write(fd, line, (unsigned)remaining);
+				if (written < 0 && errno == EINTR)
+					continue;
+				if (written <= 0)
+					break;
+				line += written;
+				remaining -= (size_t)written;
+			}
+		}
 		free((void*)lines);
 	}
 #else

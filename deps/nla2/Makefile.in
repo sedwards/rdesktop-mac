@@ -4,7 +4,7 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
-CFLAGS = @CFLAGS@ -std=gnu11 -fPIC -fvisibility=hidden -fno-omit-frame-pointer -Wredundant-decls -fsigned-char -Wimplicit-function-declaration
+CFLAGS = @CFLAGS@ -std=gnu11 -fPIC -fvisibility=hidden -fno-omit-frame-pointer -Wredundant-decls -fsigned-char -Wimplicit-function-declaration -Werror
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
@@ -19,6 +19,9 @@ SHLIB_FLAGS = @SHLIB_FLAGS@
 
 # Include the source files lists
 include Makefile.sources
+
+# The deprecated ER/DER wrappers are excluded with the 3.x compatibility APIs.
+FREERDP_SOURCES := $(filter-out %/crypto/er.c %/crypto/der.c,$(FREERDP_SOURCES))
 
 PLATFORM = @PLATFORM@
 ifeq ($(PLATFORM),linux)
@@ -55,6 +58,8 @@ INCLUDES = -I$(srcdir)/FreeRDP/winpr/include \
            $(OPENSSL_CFLAGS)
 
 DEFS = -DFREERDP_EXPORTS \
+       -DWITHOUT_FREERDP_3x_DEPRECATED \
+       -DWITHOUT_WINPR_3x_DEPRECATED \
        -DNONAMELESSUNION \
        -DUSE_EXECINFO \
        -DUSE_UNWIND \
@@ -91,6 +96,7 @@ $(LIB_TARGET): $(ALL_OBJS)
 	$(CC) $(SHLIB_FLAGS) $(LDFLAGS) -o $@ $(ALL_OBJS) $(OPENSSL_LIBS) $(PTHREAD_LIBS) $(DL_LIBS) $(LIBS)
 
 $(STATIC_TARGET): $(ALL_OBJS)
+	$(RM) $@
 	ar rcs $@ $(ALL_OBJS)
 
 $(TEST_TARGET): test_nlav2.o $(STATIC_TARGET)

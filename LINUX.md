@@ -193,6 +193,10 @@ Apple-only sources. OpenSSL is also built from the bundled sources and linked
 statically, including the legacy provider needed for NTLM authentication; no
 separate NLA library installation is required.
 
+The bundled NLA, FreeRDP, and WinPR build uses `-Werror` and disables FreeRDP's
+deprecated 3.x compatibility APIs. Linux configuration detects `timerfd` headers
+to select WinPR's native Linux timer backend. OpenSSL uses its own build flags.
+
 To omit CredSSP, pass `--disable-credssp`. Servers requiring Network Level
 Authentication (NLA) cannot be used with CredSSP disabled.
 

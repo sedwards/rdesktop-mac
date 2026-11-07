@@ -1142,7 +1142,7 @@ BOOL winpr_RemoveDirectory_RecursiveA(LPCSTR lpPathName)
 	char* path_slash = calloc(pathnamelen + 4, sizeof(char));
 	if (!path_slash)
 		return FALSE;
-	strncat(path_slash, lpPathName, pathnamelen);
+	memcpy(path_slash, lpPathName, pathnamelen + 1);
 
 	const char star[] = "*";
 	const HRESULT hr = NativePathCchAppendA(path_slash, path_slash_len, star);
@@ -1158,7 +1158,7 @@ BOOL winpr_RemoveDirectory_RecursiveA(LPCSTR lpPathName)
 			goto fail;
 
 		ret = TRUE;
-		path_slash[path_slash_len - 1] = '\0'; /* remove trailing '*' */
+		path_slash[strlen(path_slash) - 1] = '\0'; /* remove trailing '*' */
 		do
 		{
 			const size_t len = strnlen(findFileData.cFileName, ARRAYSIZE(findFileData.cFileName));

@@ -741,11 +741,17 @@ static char* html_pre_write(wStream* s, const char* what)
 	return startHTML;
 }
 
-static void html_fill_number(char* pos, size_t val)
+static BOOL html_fill_number(char* pos, size_t val)
 {
-	char str[11] = WINPR_C_ARRAY_INIT;
-	(void)_snprintf(str, sizeof(str), "%010" PRIuz, val);
-	memcpy(pos, str, 10);
+	/* CF_HTML offsets must fit exactly ten decimal digits. */
+	if ((UINT64)val > UINT64_C(9999999999))
+		return FALSE;
+	for (size_t i = 10; i > 0; i--)
+	{
+		pos[i - 1] = (char)('0' + val % 10);
+		val /= 10;
+	}
+	return TRUE;
 }
 
 static void* clipboard_wrap_html(const char* mime, const char* idata, size_t ilength,
@@ -769,16 +775,19 @@ static void* clipboard_wrap_html(const char* mime, const char* idata, size_t ile
 		return nullptr;
 	}
 
+	void* res = nullptr;
 	char* startHTML = html_pre_write(s, "Version:0.9\r\nStartHTML:");
 	char* endHTML = html_pre_write(s, "EndHTML:");
 	char* startFragment = html_pre_write(s, "StartFragment:");
 	char* endFragment = html_pre_write(s, "EndFragment:");
 
-	html_fill_number(startHTML, Stream_GetPosition(s));
+	if (!html_fill_number(startHTML, Stream_GetPosition(s)))
+		goto fail;
 	const char html[] = "<html><!--StartFragment-->";
 	Stream_Write(s, html, strnlen(html, sizeof(html)));
 
-	html_fill_number(startFragment, Stream_GetPosition(s));
+	if (!html_fill_number(startFragment, Stream_GetPosition(s)))
+		goto fail;
 
 	const char body[] = "<body><img alt=\"FreeRDP clipboard image\" src=\"data:";
 	Stream_Write(s, body, strnlen(body, sizeof(body)));
@@ -792,16 +801,19 @@ static void* clipboard_wrap_html(const char* mime, const char* idata, size_t ile
 	const char end[] = "\"/></body>";
 	Stream_Write(s, end, strnlen(end, sizeof(end)));
 
-	html_fill_number(endFragment, Stream_GetPosition(s));
+	if (!html_fill_number(endFragment, Stream_GetPosition(s)))
+		goto fail;
 
 	const char fragend[] = "<!--EndFragment--></html>";
 	Stream_Write(s, fragend, strnlen(fragend, sizeof(fragend)));
-	html_fill_number(endHTML, Stream_GetPosition(s));
+	if (!html_fill_number(endHTML, Stream_GetPosition(s)))
+		goto fail;
 
-	void* res = Stream_Buffer(s);
+	res = Stream_Buffer(s);
 	const size_t pos = Stream_GetPosition(s);
 	*plen = WINPR_ASSERTING_INT_CAST(uint32_t, pos);
-	Stream_Free(s, FALSE);
+fail:
+	Stream_Free(s, res == nullptr);
 	free(b64);
 	return res;
 }

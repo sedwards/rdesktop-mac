@@ -116,7 +116,7 @@ static BOOL update_name(rdpAssistanceFile* file, const char* name)
 
 	if (!name)
 	{
-		WLog_ERR(TAG, "ASSISTANCE file %s invalid name", name);
+		WLog_ERR(TAG, "ASSISTANCE file name is NULL");
 		return FALSE;
 	}
 
