@@ -37,3 +37,10 @@ rdp_reset_state()
 {
   mock();
 }
+
+void _rdp_protocol_error(const char *file, int line, const char *func,
+                         const char *message, STREAM s)
+{
+  mock(file, line, func, message, s);
+  abort();
+}

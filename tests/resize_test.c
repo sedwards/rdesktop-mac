@@ -5,7 +5,8 @@
 
 /* Boilerplate */
 Describe(Resize);
-BeforeEach(Resize) {};
+static void setup_resize_state(void);
+BeforeEach(Resize) { setup_resize_state(); };
 AfterEach(Resize) {};
 
 /* globals driven by xwin.c */
@@ -24,6 +25,7 @@ RD_BOOL g_fullscreen;
 RD_BOOL g_grab_keyboard;
 RD_BOOL g_hide_decorations;
 RD_BOOL g_pending_resize;
+struct timeval g_pending_resize_defer_timer;
 char g_title[] = "MyTitle";
 char g_seamless_spawn_cmd[] = "";
 int g_server_depth;
@@ -63,7 +65,6 @@ RD_BOOL g_bitmap_cache_persist_enable;
 RD_BOOL g_numlock_sync;
 RD_BOOL g_pending_resize;
 RD_BOOL g_network_error;
-time_t g_wait_for_deactivate_ts;
 RDPCOMP g_mppc_dict;
 RD_BOOL g_redirect;
 char *g_redirect_server;
@@ -188,6 +189,7 @@ xfree(void *mem)
 Status
 XGetWindowAttributes(Display *display, Window wnd, XWindowAttributes *attr)
 {
+	memset(attr, 0, sizeof(*attr));
 	return mock(display, wnd, attr);
 }
 
@@ -211,6 +213,13 @@ XSetClipRectangles(Display *display, GC gc, int clip_x_origin, int clip_y_origin
 	return mock(display, gc, clip_x_origin, clip_y_origin, rectangles, n, ordering);
 }
 
+static void setup_resize_state(void)
+{
+	/* These tests simulate resizes after the initial capabilities exchange. */
+	g_first_bitmap_caps = False;
+	g_dynamic_session_resize = True;
+}
+
 /* Test helpers */
 
 struct stream
@@ -226,7 +235,7 @@ bitmap_caps_packet(int width, int height)
 	out_uint16_le(&s, width);
 	out_uint16_le(&s, height);
 	s_mark_end(&s);
-	s_reset(&s);
+	s_seek(&s, 0);
 
 	return s;
 }
@@ -421,7 +430,8 @@ void get_width_and_height_from_mcs_connect_initial(int *width, int *height)
 	sec_out_mcs_connect_initial_pdu(s, 0);
 
 	/* Rewind and extract the requested session size */
-	s_reset(s);
+	s_mark_end(s);
+	s_seek(s, 0);
 	in_uint8s(s, 31);
 	in_uint16_le(s, *width);	/* desktopWidth */
 	in_uint16_le(s, *height);	/* desktopHeight */

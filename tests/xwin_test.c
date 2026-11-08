@@ -30,6 +30,7 @@ RD_BOOL g_fullscreen;
 RD_BOOL g_grab_keyboard;
 RD_BOOL g_hide_decorations;
 RD_BOOL g_pending_resize;
+struct timeval g_pending_resize_defer_timer;
 char g_title[64];
 char g_seamless_spawn_cmd[512];
 /* Color depth of the RDP session.
@@ -123,13 +124,14 @@ int XResizeWindow(Display *display, Window wnd, unsigned int width, unsigned int
 Status
 XGetWindowAttributes(Display *display, Window wnd, XWindowAttributes *attr)
 {
+  memset(attr, 0, sizeof(*attr));
   return mock(display, wnd, attr);
 }
 
 void
-XSetWMSizeHints(Display *display, Window wnd, XSizeHints *hints, Atom property)
+XSetWMNormalHints(Display *display, Window wnd, XSizeHints *hints)
 {
-  mock(display, wnd, hints, property);
+  mock(display, wnd, hints);
 }
 
 int
@@ -154,7 +156,7 @@ Ensure(XWIN, UiResizeWindowCallsXResizeWindow) {
 
   /* stubs */
   expect(XGetWindowAttributes, will_return(True));
-  expect(XSetWMSizeHints);
+  expect(XSetWMNormalHints);
   expect(XSetClipRectangles);
 
   /* expects */

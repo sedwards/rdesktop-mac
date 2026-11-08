@@ -69,8 +69,7 @@ Ensure(MCS, should_produce_valid_packet_for_McsSendCJrq)
   expect(iso_init, will_return(s));
   expect(iso_send, when(stream->data, is_equal_to_contents_of(content, sizeof(content))));
 
-  mcs_send_cjrq(chan_id);
-  s_free(s);
+  mcs_send_cjrq(chan_id); /* The sender owns and frees s. */
 }
 
 /* Test function */
@@ -87,6 +86,5 @@ Ensure(MCS, should_produce_valid_packet_for_McsSendDPU)
 
   expect(iso_send, when(stream->data, is_equal_to_contents_of(content, sizeof(content))));
 
-  mcs_send_dpu(reason);
-  s_free(s);
+  mcs_send_dpu(reason); /* The sender owns and frees s. */
 }

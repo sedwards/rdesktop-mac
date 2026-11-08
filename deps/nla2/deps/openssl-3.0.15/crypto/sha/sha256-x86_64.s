@@ -1,12 +1,12 @@
 .text	
 
 
-.globl	_sha256_block_data_order
-
-.p2align	4
-_sha256_block_data_order:
-
-	leaq	_OPENSSL_ia32cap_P(%rip),%r11
+.globl	sha256_block_data_order
+.type	sha256_block_data_order,@function
+.align	16
+sha256_block_data_order:
+.cfi_startproc	
+	leaq	OPENSSL_ia32cap_P(%rip),%r11
 	movl	0(%r11),%r9d
 	movl	4(%r11),%r10d
 	movl	8(%r11),%r11d
@@ -14,28 +14,28 @@ _sha256_block_data_order:
 	jnz	_shaext_shortcut
 	andl	$296,%r11d
 	cmpl	$296,%r11d
-	je	L$avx2_shortcut
+	je	.Lavx2_shortcut
 	andl	$1073741824,%r9d
 	andl	$268435968,%r10d
 	orl	%r9d,%r10d
 	cmpl	$1342177792,%r10d
-	je	L$avx_shortcut
+	je	.Lavx_shortcut
 	testl	$512,%r10d
-	jnz	L$ssse3_shortcut
+	jnz	.Lssse3_shortcut
 	movq	%rsp,%rax
-
+.cfi_def_cfa_register	%rax
 	pushq	%rbx
-
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_offset	%r15,-56
 	shlq	$4,%rdx
 	subq	$64+32,%rsp
 	leaq	(%rsi,%rdx,4),%rdx
@@ -44,8 +44,8 @@ _sha256_block_data_order:
 	movq	%rsi,64+8(%rsp)
 	movq	%rdx,64+16(%rsp)
 	movq	%rax,88(%rsp)
-
-L$prologue:
+.cfi_escape	0x0f,0x06,0x77,0xd8,0x00,0x06,0x23,0x08
+.Lprologue:
 
 	movl	0(%rdi),%eax
 	movl	4(%rdi),%ebx
@@ -55,10 +55,10 @@ L$prologue:
 	movl	20(%rdi),%r9d
 	movl	24(%rdi),%r10d
 	movl	28(%rdi),%r11d
-	jmp	L$loop
+	jmp	.Lloop
 
-.p2align	4
-L$loop:
+.align	16
+.Lloop:
 	movl	%ebx,%edi
 	leaq	K256(%rip),%rbp
 	xorl	%ecx,%edi
@@ -717,9 +717,9 @@ L$loop:
 	addl	%r12d,%eax
 
 	leaq	20(%rbp),%rbp
-	jmp	L$rounds_16_xx
-.p2align	4
-L$rounds_16_xx:
+	jmp	.Lrounds_16_xx
+.align	16
+.Lrounds_16_xx:
 	movl	4(%rsp),%r13d
 	movl	56(%rsp),%r15d
 
@@ -1681,7 +1681,7 @@ L$rounds_16_xx:
 
 	leaq	20(%rbp),%rbp
 	cmpb	$0,3(%rbp)
-	jnz	L$rounds_16_xx
+	jnz	.Lrounds_16_xx
 
 	movq	64+0(%rsp),%rdi
 	addl	%r14d,%eax
@@ -1706,30 +1706,30 @@ L$rounds_16_xx:
 	movl	%r9d,20(%rdi)
 	movl	%r10d,24(%rdi)
 	movl	%r11d,28(%rdi)
-	jb	L$loop
+	jb	.Lloop
 
 	movq	88(%rsp),%rsi
-
+.cfi_def_cfa	%rsi,8
 	movq	-48(%rsi),%r15
-
+.cfi_restore	%r15
 	movq	-40(%rsi),%r14
-
+.cfi_restore	%r14
 	movq	-32(%rsi),%r13
-
+.cfi_restore	%r13
 	movq	-24(%rsi),%r12
-
+.cfi_restore	%r12
 	movq	-16(%rsi),%rbp
-
+.cfi_restore	%rbp
 	movq	-8(%rsi),%rbx
-
+.cfi_restore	%rbx
 	leaq	(%rsi),%rsp
-
-L$epilogue:
+.cfi_def_cfa_register	%rsp
+.Lepilogue:
 	.byte	0xf3,0xc3
-
-
-.p2align	6
-
+.cfi_endproc	
+.size	sha256_block_data_order,.-sha256_block_data_order
+.align	64
+.type	K256,@object
 K256:
 .long	0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5
 .long	0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5
@@ -1771,11 +1771,11 @@ K256:
 .long	0xffffffff,0xffffffff,0x03020100,0x0b0a0908
 .long	0xffffffff,0xffffffff,0x03020100,0x0b0a0908
 .byte	83,72,65,50,53,54,32,98,108,111,99,107,32,116,114,97,110,115,102,111,114,109,32,102,111,114,32,120,56,54,95,54,52,44,32,67,82,89,80,84,79,71,65,77,83,32,98,121,32,60,97,112,112,114,111,64,111,112,101,110,115,115,108,46,111,114,103,62,0
-
-.p2align	6
+.type	sha256_block_data_order_shaext,@function
+.align	64
 sha256_block_data_order_shaext:
 _shaext_shortcut:
-
+.cfi_startproc	
 	leaq	K256+128(%rip),%rcx
 	movdqu	(%rdi),%xmm1
 	movdqu	16(%rdi),%xmm2
@@ -1787,10 +1787,10 @@ _shaext_shortcut:
 	movdqa	%xmm7,%xmm8
 .byte	102,15,58,15,202,8
 	punpcklqdq	%xmm0,%xmm2
-	jmp	L$oop_shaext
+	jmp	.Loop_shaext
 
-.p2align	4
-L$oop_shaext:
+.align	16
+.Loop_shaext:
 	movdqu	(%rsi),%xmm3
 	movdqu	16(%rsi),%xmm4
 	movdqu	32(%rsi),%xmm5
@@ -1967,7 +1967,7 @@ L$oop_shaext:
 
 	paddd	%xmm10,%xmm2
 	paddd	%xmm9,%xmm1
-	jnz	L$oop_shaext
+	jnz	.Loop_shaext
 
 	pshufd	$0xb1,%xmm2,%xmm2
 	pshufd	$0x1b,%xmm1,%xmm7
@@ -1978,27 +1978,27 @@ L$oop_shaext:
 	movdqu	%xmm1,(%rdi)
 	movdqu	%xmm2,16(%rdi)
 	.byte	0xf3,0xc3
-
-
-
-.p2align	6
+.cfi_endproc	
+.size	sha256_block_data_order_shaext,.-sha256_block_data_order_shaext
+.type	sha256_block_data_order_ssse3,@function
+.align	64
 sha256_block_data_order_ssse3:
-
-L$ssse3_shortcut:
+.cfi_startproc	
+.Lssse3_shortcut:
 	movq	%rsp,%rax
-
+.cfi_def_cfa_register	%rax
 	pushq	%rbx
-
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_offset	%r15,-56
 	shlq	$4,%rdx
 	subq	$96,%rsp
 	leaq	(%rsi,%rdx,4),%rdx
@@ -2007,8 +2007,8 @@ L$ssse3_shortcut:
 	movq	%rsi,64+8(%rsp)
 	movq	%rdx,64+16(%rsp)
 	movq	%rax,88(%rsp)
-
-L$prologue_ssse3:
+.cfi_escape	0x0f,0x06,0x77,0xd8,0x00,0x06,0x23,0x08
+.Lprologue_ssse3:
 
 	movl	0(%rdi),%eax
 	movl	4(%rdi),%ebx
@@ -2020,9 +2020,9 @@ L$prologue_ssse3:
 	movl	28(%rdi),%r11d
 
 
-	jmp	L$loop_ssse3
-.p2align	4
-L$loop_ssse3:
+	jmp	.Lloop_ssse3
+.align	16
+.Lloop_ssse3:
 	movdqa	K256+512(%rip),%xmm7
 	movdqu	0(%rsi),%xmm0
 	movdqu	16(%rsi),%xmm1
@@ -2049,10 +2049,10 @@ L$loop_ssse3:
 	xorl	%ecx,%edi
 	movdqa	%xmm7,48(%rsp)
 	movl	%r8d,%r13d
-	jmp	L$ssse3_00_47
+	jmp	.Lssse3_00_47
 
-.p2align	4
-L$ssse3_00_47:
+.align	16
+.Lssse3_00_47:
 	subq	$-128,%rbp
 	rorl	$14,%r13d
 	movdqa	%xmm1,%xmm4
@@ -2631,7 +2631,7 @@ L$ssse3_00_47:
 	addl	%eax,%r14d
 	movdqa	%xmm6,48(%rsp)
 	cmpb	$0,131(%rbp)
-	jne	L$ssse3_00_47
+	jne	.Lssse3_00_47
 	rorl	$14,%r13d
 	movl	%r14d,%eax
 	movl	%r9d,%r12d
@@ -3071,47 +3071,47 @@ L$ssse3_00_47:
 	movl	%r9d,20(%rdi)
 	movl	%r10d,24(%rdi)
 	movl	%r11d,28(%rdi)
-	jb	L$loop_ssse3
+	jb	.Lloop_ssse3
 
 	movq	88(%rsp),%rsi
-
+.cfi_def_cfa	%rsi,8
 	movq	-48(%rsi),%r15
-
+.cfi_restore	%r15
 	movq	-40(%rsi),%r14
-
+.cfi_restore	%r14
 	movq	-32(%rsi),%r13
-
+.cfi_restore	%r13
 	movq	-24(%rsi),%r12
-
+.cfi_restore	%r12
 	movq	-16(%rsi),%rbp
-
+.cfi_restore	%rbp
 	movq	-8(%rsi),%rbx
-
+.cfi_restore	%rbx
 	leaq	(%rsi),%rsp
-
-L$epilogue_ssse3:
+.cfi_def_cfa_register	%rsp
+.Lepilogue_ssse3:
 	.byte	0xf3,0xc3
-
-
-
-.p2align	6
+.cfi_endproc	
+.size	sha256_block_data_order_ssse3,.-sha256_block_data_order_ssse3
+.type	sha256_block_data_order_avx,@function
+.align	64
 sha256_block_data_order_avx:
-
-L$avx_shortcut:
+.cfi_startproc	
+.Lavx_shortcut:
 	movq	%rsp,%rax
-
+.cfi_def_cfa_register	%rax
 	pushq	%rbx
-
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_offset	%r15,-56
 	shlq	$4,%rdx
 	subq	$96,%rsp
 	leaq	(%rsi,%rdx,4),%rdx
@@ -3120,8 +3120,8 @@ L$avx_shortcut:
 	movq	%rsi,64+8(%rsp)
 	movq	%rdx,64+16(%rsp)
 	movq	%rax,88(%rsp)
-
-L$prologue_avx:
+.cfi_escape	0x0f,0x06,0x77,0xd8,0x00,0x06,0x23,0x08
+.Lprologue_avx:
 
 	vzeroupper
 	movl	0(%rdi),%eax
@@ -3134,9 +3134,9 @@ L$prologue_avx:
 	movl	28(%rdi),%r11d
 	vmovdqa	K256+512+32(%rip),%xmm8
 	vmovdqa	K256+512+64(%rip),%xmm9
-	jmp	L$loop_avx
-.p2align	4
-L$loop_avx:
+	jmp	.Lloop_avx
+.align	16
+.Lloop_avx:
 	vmovdqa	K256+512(%rip),%xmm7
 	vmovdqu	0(%rsi),%xmm0
 	vmovdqu	16(%rsi),%xmm1
@@ -3159,10 +3159,10 @@ L$loop_avx:
 	xorl	%ecx,%edi
 	vmovdqa	%xmm7,48(%rsp)
 	movl	%r8d,%r13d
-	jmp	L$avx_00_47
+	jmp	.Lavx_00_47
 
-.p2align	4
-L$avx_00_47:
+.align	16
+.Lavx_00_47:
 	subq	$-128,%rbp
 	vpalignr	$4,%xmm0,%xmm1,%xmm4
 	shrdl	$14,%r13d,%r13d
@@ -3705,7 +3705,7 @@ L$avx_00_47:
 	addl	%eax,%r14d
 	vmovdqa	%xmm6,48(%rsp)
 	cmpb	$0,131(%rbp)
-	jne	L$avx_00_47
+	jne	.Lavx_00_47
 	shrdl	$14,%r13d,%r13d
 	movl	%r14d,%eax
 	movl	%r9d,%r12d
@@ -4145,48 +4145,48 @@ L$avx_00_47:
 	movl	%r9d,20(%rdi)
 	movl	%r10d,24(%rdi)
 	movl	%r11d,28(%rdi)
-	jb	L$loop_avx
+	jb	.Lloop_avx
 
 	movq	88(%rsp),%rsi
-
+.cfi_def_cfa	%rsi,8
 	vzeroupper
 	movq	-48(%rsi),%r15
-
+.cfi_restore	%r15
 	movq	-40(%rsi),%r14
-
+.cfi_restore	%r14
 	movq	-32(%rsi),%r13
-
+.cfi_restore	%r13
 	movq	-24(%rsi),%r12
-
+.cfi_restore	%r12
 	movq	-16(%rsi),%rbp
-
+.cfi_restore	%rbp
 	movq	-8(%rsi),%rbx
-
+.cfi_restore	%rbx
 	leaq	(%rsi),%rsp
-
-L$epilogue_avx:
+.cfi_def_cfa_register	%rsp
+.Lepilogue_avx:
 	.byte	0xf3,0xc3
-
-
-
-.p2align	6
+.cfi_endproc	
+.size	sha256_block_data_order_avx,.-sha256_block_data_order_avx
+.type	sha256_block_data_order_avx2,@function
+.align	64
 sha256_block_data_order_avx2:
-
-L$avx2_shortcut:
+.cfi_startproc	
+.Lavx2_shortcut:
 	movq	%rsp,%rax
-
+.cfi_def_cfa_register	%rax
 	pushq	%rbx
-
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_offset	%r15,-56
 	subq	$544,%rsp
 	shlq	$4,%rdx
 	andq	$-1024,%rsp
@@ -4196,8 +4196,8 @@ L$avx2_shortcut:
 	movq	%rsi,64+8(%rsp)
 	movq	%rdx,64+16(%rsp)
 	movq	%rax,88(%rsp)
-
-L$prologue_avx2:
+.cfi_escape	0x0f,0x06,0x77,0xd8,0x00,0x06,0x23,0x08
+.Lprologue_avx2:
 
 	vzeroupper
 	subq	$-64,%rsi
@@ -4214,9 +4214,9 @@ L$prologue_avx2:
 	movl	28(%rdi),%r11d
 	vmovdqa	K256+512+32(%rip),%ymm8
 	vmovdqa	K256+512+64(%rip),%ymm9
-	jmp	L$oop_avx2
-.p2align	4
-L$oop_avx2:
+	jmp	.Loop_avx2
+.align	16
+.Loop_avx2:
 	vmovdqa	K256+512(%rip),%ymm7
 	vmovdqu	-64+0(%rsi),%xmm0
 	vmovdqu	-64+16(%rsi),%xmm1
@@ -4242,30 +4242,30 @@ L$oop_avx2:
 	vmovdqa	%ymm5,32(%rsp)
 
 	movq	88(%rsp),%rdi
-
+.cfi_def_cfa	%rdi,8
 	leaq	-64(%rsp),%rsp
 
 
 
 	movq	%rdi,-8(%rsp)
-
+.cfi_escape	0x0f,0x05,0x77,0x78,0x06,0x23,0x08
 	movl	%ebx,%edi
 	vmovdqa	%ymm6,0(%rsp)
 	xorl	%ecx,%edi
 	vmovdqa	%ymm7,32(%rsp)
 	movl	%r9d,%r12d
 	subq	$-32*4,%rbp
-	jmp	L$avx2_00_47
+	jmp	.Lavx2_00_47
 
-.p2align	4
-L$avx2_00_47:
+.align	16
+.Lavx2_00_47:
 	leaq	-64(%rsp),%rsp
-
+.cfi_escape	0x0f,0x05,0x77,0x38,0x06,0x23,0x08
 
 	pushq	64-8(%rsp)
-
+.cfi_escape	0x0f,0x05,0x77,0x00,0x06,0x23,0x08
 	leaq	8(%rsp),%rsp
-
+.cfi_escape	0x0f,0x05,0x77,0x78,0x06,0x23,0x08
 	vpalignr	$4,%ymm0,%ymm1,%ymm4
 	addl	0+128(%rsp),%r11d
 	andl	%r8d,%r12d
@@ -4521,12 +4521,12 @@ L$avx2_00_47:
 	movl	%r9d,%r12d
 	vmovdqa	%ymm6,32(%rsp)
 	leaq	-64(%rsp),%rsp
-
+.cfi_escape	0x0f,0x05,0x77,0x38,0x06,0x23,0x08
 
 	pushq	64-8(%rsp)
-
+.cfi_escape	0x0f,0x05,0x77,0x00,0x06,0x23,0x08
 	leaq	8(%rsp),%rsp
-
+.cfi_escape	0x0f,0x05,0x77,0x78,0x06,0x23,0x08
 	vpalignr	$4,%ymm2,%ymm3,%ymm4
 	addl	0+128(%rsp),%r11d
 	andl	%r8d,%r12d
@@ -4783,7 +4783,7 @@ L$avx2_00_47:
 	vmovdqa	%ymm6,32(%rsp)
 	leaq	128(%rbp),%rbp
 	cmpb	$0,3(%rbp)
-	jne	L$avx2_00_47
+	jne	.Lavx2_00_47
 	addl	0+64(%rsp),%r11d
 	andl	%r8d,%r12d
 	rorxl	$25,%r8d,%r13d
@@ -5192,15 +5192,15 @@ L$avx2_00_47:
 	movl	%r11d,28(%rdi)
 
 	cmpq	80(%rbp),%rsi
-	je	L$done_avx2
+	je	.Ldone_avx2
 
 	xorl	%r14d,%r14d
 	movl	%ebx,%edi
 	xorl	%ecx,%edi
 	movl	%r9d,%r12d
-	jmp	L$ower_avx2
-.p2align	4
-L$ower_avx2:
+	jmp	.Lower_avx2
+.align	16
+.Lower_avx2:
 	addl	0+16(%rbp),%r11d
 	andl	%r8d,%r12d
 	rorxl	$25,%r8d,%r13d
@@ -5395,14 +5395,14 @@ L$ower_avx2:
 	movl	%r9d,%r12d
 	leaq	-64(%rbp),%rbp
 	cmpq	%rsp,%rbp
-	jae	L$ower_avx2
+	jae	.Lower_avx2
 
 	movq	512(%rsp),%rdi
 	addl	%r14d,%eax
 
 	leaq	448(%rsp),%rsp
 
-
+.cfi_escape	0x0f,0x06,0x77,0xd8,0x00,0x06,0x23,0x08
 
 	addl	0(%rdi),%eax
 	addl	4(%rdi),%ebx
@@ -5426,31 +5426,52 @@ L$ower_avx2:
 	movl	%r10d,24(%rdi)
 	movl	%r11d,28(%rdi)
 
-	jbe	L$oop_avx2
+	jbe	.Loop_avx2
 	leaq	(%rsp),%rbp
 
 
+.cfi_escape	0x0f,0x06,0x76,0xd8,0x00,0x06,0x23,0x08
 
-
-L$done_avx2:
+.Ldone_avx2:
 	movq	88(%rbp),%rsi
-
+.cfi_def_cfa	%rsi,8
 	vzeroupper
 	movq	-48(%rsi),%r15
-
+.cfi_restore	%r15
 	movq	-40(%rsi),%r14
-
+.cfi_restore	%r14
 	movq	-32(%rsi),%r13
-
+.cfi_restore	%r13
 	movq	-24(%rsi),%r12
-
+.cfi_restore	%r12
 	movq	-16(%rsi),%rbp
-
+.cfi_restore	%rbp
 	movq	-8(%rsi),%rbx
-
+.cfi_restore	%rbx
 	leaq	(%rsi),%rsp
-
-L$epilogue_avx2:
+.cfi_def_cfa_register	%rsp
+.Lepilogue_avx2:
 	.byte	0xf3,0xc3
-
-
+.cfi_endproc	
+.size	sha256_block_data_order_avx2,.-sha256_block_data_order_avx2
+	.section ".note.gnu.property", "a"
+	.p2align 3
+	.long 1f - 0f
+	.long 4f - 1f
+	.long 5
+0:
+	# "GNU" encoded with .byte, since .asciz isn't supported
+	# on Solaris.
+	.byte 0x47
+	.byte 0x4e
+	.byte 0x55
+	.byte 0
+1:
+	.p2align 3
+	.long 0xc0000002
+	.long 3f - 2f
+2:
+	.long 3
+3:
+	.p2align 3
+4:

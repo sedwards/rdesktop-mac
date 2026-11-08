@@ -1,18 +1,18 @@
 .text	
 
-
-.p2align	5
+.type	__KeccakF1600,@function
+.align	32
 __KeccakF1600:
-
+.cfi_startproc	
 	movq	60(%rdi),%rax
 	movq	68(%rdi),%rbx
 	movq	76(%rdi),%rcx
 	movq	84(%rdi),%rdx
 	movq	92(%rdi),%rbp
-	jmp	L$oop
+	jmp	.Loop
 
-.p2align	5
-L$oop:
+.align	32
+.Loop:
 	movq	-100(%rdi),%r8
 	movq	-52(%rdi),%r9
 	movq	-4(%rdi),%r10
@@ -252,33 +252,39 @@ L$oop:
 	movq	%r13,%rdx
 
 	testq	$255,%r15
-	jnz	L$oop
+	jnz	.Loop
 
 	leaq	-192(%r15),%r15
 	.byte	0xf3,0xc3
+.cfi_endproc	
+.size	__KeccakF1600,.-__KeccakF1600
 
-
-
-
-.p2align	5
+.type	KeccakF1600,@function
+.align	32
 KeccakF1600:
-
+.cfi_startproc	
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
 
 	leaq	100(%rdi),%rdi
 	subq	$200,%rsp
-
+.cfi_adjust_cfa_offset	200
 
 	notq	-92(%rdi)
 	notq	-84(%rdi)
@@ -301,44 +307,56 @@ KeccakF1600:
 	leaq	-100(%rdi),%rdi
 
 	addq	$200,%rsp
-
+.cfi_adjust_cfa_offset	-200
 
 	popq	%r15
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%r15
 	popq	%r14
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%r14
 	popq	%r13
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%r13
 	popq	%r12
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%r12
 	popq	%rbp
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%rbp
 	popq	%rbx
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%rbx
 	.byte	0xf3,0xc3
-
-
-.globl	_SHA3_absorb
-
-.p2align	5
-_SHA3_absorb:
-
+.cfi_endproc	
+.size	KeccakF1600,.-KeccakF1600
+.globl	SHA3_absorb
+.type	SHA3_absorb,@function
+.align	32
+SHA3_absorb:
+.cfi_startproc	
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
 
 	leaq	100(%rdi),%rdi
 	subq	$232,%rsp
-
+.cfi_adjust_cfa_offset	232
 
 	movq	%rsi,%r9
 	leaq	100(%rsp),%rsi
@@ -353,14 +371,14 @@ _SHA3_absorb:
 
 	movq	%rcx,216-100(%rsi)
 
-L$oop_absorb:
+.Loop_absorb:
 	cmpq	%rcx,%rdx
-	jc	L$done_absorb
+	jc	.Ldone_absorb
 
 	shrq	$3,%rcx
 	leaq	-100(%rdi),%r8
 
-L$block_absorb:
+.Lblock_absorb:
 	movq	(%r9),%rax
 	leaq	8(%r9),%r9
 	xorq	(%r8),%rax
@@ -368,7 +386,7 @@ L$block_absorb:
 	subq	$8,%rdx
 	movq	%rax,-8(%r8)
 	subq	$1,%rcx
-	jnz	L$block_absorb
+	jnz	.Lblock_absorb
 
 	movq	%r9,200-100(%rsi)
 	movq	%rdx,208-100(%rsi)
@@ -376,10 +394,10 @@ L$block_absorb:
 	movq	200-100(%rsi),%r9
 	movq	208-100(%rsi),%rdx
 	movq	216-100(%rsi),%rcx
-	jmp	L$oop_absorb
+	jmp	.Loop_absorb
 
-.p2align	5
-L$done_absorb:
+.align	32
+.Ldone_absorb:
 	movq	%rdx,%rax
 
 	notq	-92(%rdi)
@@ -390,81 +408,93 @@ L$done_absorb:
 	notq	60(%rdi)
 
 	addq	$232,%rsp
-
+.cfi_adjust_cfa_offset	-232
 
 	popq	%r15
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%r15
 	popq	%r14
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%r14
 	popq	%r13
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%r13
 	popq	%r12
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%r12
 	popq	%rbp
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%rbp
 	popq	%rbx
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%rbx
 	.byte	0xf3,0xc3
-
-
-.globl	_SHA3_squeeze
-
-.p2align	5
-_SHA3_squeeze:
-
+.cfi_endproc	
+.size	SHA3_absorb,.-SHA3_absorb
+.globl	SHA3_squeeze
+.type	SHA3_squeeze,@function
+.align	32
+SHA3_squeeze:
+.cfi_startproc	
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-16
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-24
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-32
 
 	shrq	$3,%rcx
 	movq	%rdi,%r8
 	movq	%rsi,%r12
 	movq	%rdx,%r13
 	movq	%rcx,%r14
-	jmp	L$oop_squeeze
+	jmp	.Loop_squeeze
 
-.p2align	5
-L$oop_squeeze:
+.align	32
+.Loop_squeeze:
 	cmpq	$8,%r13
-	jb	L$tail_squeeze
+	jb	.Ltail_squeeze
 
 	movq	(%r8),%rax
 	leaq	8(%r8),%r8
 	movq	%rax,(%r12)
 	leaq	8(%r12),%r12
 	subq	$8,%r13
-	jz	L$done_squeeze
+	jz	.Ldone_squeeze
 
 	subq	$1,%rcx
-	jnz	L$oop_squeeze
+	jnz	.Loop_squeeze
 
 	call	KeccakF1600
 	movq	%rdi,%r8
 	movq	%r14,%rcx
-	jmp	L$oop_squeeze
+	jmp	.Loop_squeeze
 
-L$tail_squeeze:
+.Ltail_squeeze:
 	movq	%r8,%rsi
 	movq	%r12,%rdi
 	movq	%r13,%rcx
 .byte	0xf3,0xa4
 
-L$done_squeeze:
+.Ldone_squeeze:
 	popq	%r14
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%r14
 	popq	%r13
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%r13
 	popq	%r12
-
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%r13
 	.byte	0xf3,0xc3
-
-
-.p2align	8
+.cfi_endproc	
+.size	SHA3_squeeze,.-SHA3_squeeze
+.align	256
 .quad	0,0,0,0,0,0,0,0
-
+.type	iotas,@object
 iotas:
 .quad	0x0000000000000001
 .quad	0x0000000000008082
@@ -490,5 +520,26 @@ iotas:
 .quad	0x8000000000008080
 .quad	0x0000000080000001
 .quad	0x8000000080008008
-
+.size	iotas,.-iotas
 .byte	75,101,99,99,97,107,45,49,54,48,48,32,97,98,115,111,114,98,32,97,110,100,32,115,113,117,101,101,122,101,32,102,111,114,32,120,56,54,95,54,52,44,32,67,82,89,80,84,79,71,65,77,83,32,98,121,32,60,97,112,112,114,111,64,111,112,101,110,115,115,108,46,111,114,103,62,0
+	.section ".note.gnu.property", "a"
+	.p2align 3
+	.long 1f - 0f
+	.long 4f - 1f
+	.long 5
+0:
+	# "GNU" encoded with .byte, since .asciz isn't supported
+	# on Solaris.
+	.byte 0x47
+	.byte 0x4e
+	.byte 0x55
+	.byte 0
+1:
+	.p2align 3
+	.long 0xc0000002
+	.long 3f - 2f
+2:
+	.long 3
+3:
+	.p2align 3
+4:

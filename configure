@@ -679,11 +679,20 @@ XCURSOR_LIBS
 XCURSOR_CFLAGS
 XRANDR_LIBS
 XRANDR_CFLAGS
+XWAYLAND
 CREDSSPOBJ
 GSSAPI_LIBS
 GSSAPI_CFLAGS
 PKG_CONFIG_LIBDIR
 PKG_CONFIG_PATH
+LIBTOOLIZE
+AUTOMAKE
+ACLOCAL
+AUTORECONF
+AUTOHEADER
+AUTOCONF
+PERL
+MAKE
 PKG_CONFIG
 NLA_LIBS
 BUILD_DEPS
@@ -816,6 +825,7 @@ CPPFLAGS
 LT_SYS_LIBRARY_PATH
 XMKMF
 CPP
+PERL
 PKG_CONFIG
 PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
@@ -1514,6 +1524,7 @@ Some influential environment variables:
               User-defined run-time library search path.
   XMKMF       Path to xmkmf, Makefile generator for X Window System
   CPP         C preprocessor
+  PERL        Perl 5.10+ interpreter for building bundled OpenSSL
   PKG_CONFIG  path to pkg-config utility
   PKG_CONFIG_PATH
               directories to add to pkg-config's search path
@@ -14307,7 +14318,7 @@ fi
 
         if test "x$no_x" = xyes
 then :
-  as_fn_error $? "Linux requires X11 development headers and libraries" "$LINENO" 5
+  as_fn_error $? "Linux requires X11 development headers and libraries. Install the X11 development package (usually libX11-devel or libx11-dev); see LINUX.md." "$LINENO" 5
 fi
         PLATFORM_CFLAGS="$PLATFORM_CFLAGS $X_CFLAGS"
         PLATFORM_LIBS="$X_LIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS"
@@ -14436,12 +14447,818 @@ else
 fi
 
 
-# no .pc for GMP
+if test "$PLATFORM" = linux
+then :
+
+    if test -z "$PKG_CONFIG"
+then :
+
+        as_fn_error $? "Linux requires the pkg-config command. Install pkg-config or a pkgconf compatibility package; see LINUX.md." "$LINENO" 5
+
+fi
+    for ac_prog in gmake make
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_MAKE+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) case $MAKE in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_MAKE="$MAKE" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_MAKE="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac ;;
+esac
+fi
+MAKE=$ac_cv_path_MAKE
+if test -n "$MAKE"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $MAKE" >&5
+printf "%s\n" "$MAKE" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+  test -n "$MAKE" && break
+done
+
+    if test -z "$MAKE" || ! "$MAKE" --version 2>/dev/null | $GREP 'GNU Make' >/dev/null
+then :
+
+        as_fn_error $? "GNU Make is required. Install make or gmake; see LINUX.md." "$LINENO" 5
+
+fi
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ar", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ar; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_AR+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) if test -n "$AR"; then
+  ac_cv_prog_AR="$AR" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_AR="${ac_tool_prefix}ar"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi ;;
+esac
+fi
+AR=$ac_cv_prog_AR
+if test -n "$AR"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $AR" >&5
+printf "%s\n" "$AR" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_AR"; then
+  ac_ct_AR=$AR
+  # Extract the first word of "ar", so it can be a program name with args.
+set dummy ar; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_ac_ct_AR+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) if test -n "$ac_ct_AR"; then
+  ac_cv_prog_ac_ct_AR="$ac_ct_AR" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_AR="ar"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi ;;
+esac
+fi
+ac_ct_AR=$ac_cv_prog_ac_ct_AR
+if test -n "$ac_ct_AR"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_ct_AR" >&5
+printf "%s\n" "$ac_ct_AR" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+  if test "x$ac_ct_AR" = x; then
+    AR=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+printf "%s\n" "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    AR=$ac_ct_AR
+  fi
+else
+  AR="$ac_cv_prog_AR"
+fi
+
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ranlib", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ranlib; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_RANLIB+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) if test -n "$RANLIB"; then
+  ac_cv_prog_RANLIB="$RANLIB" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_RANLIB="${ac_tool_prefix}ranlib"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi ;;
+esac
+fi
+RANLIB=$ac_cv_prog_RANLIB
+if test -n "$RANLIB"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $RANLIB" >&5
+printf "%s\n" "$RANLIB" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_RANLIB"; then
+  ac_ct_RANLIB=$RANLIB
+  # Extract the first word of "ranlib", so it can be a program name with args.
+set dummy ranlib; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_ac_ct_RANLIB+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) if test -n "$ac_ct_RANLIB"; then
+  ac_cv_prog_ac_ct_RANLIB="$ac_ct_RANLIB" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_RANLIB="ranlib"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi ;;
+esac
+fi
+ac_ct_RANLIB=$ac_cv_prog_ac_ct_RANLIB
+if test -n "$ac_ct_RANLIB"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_ct_RANLIB" >&5
+printf "%s\n" "$ac_ct_RANLIB" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+  if test "x$ac_ct_RANLIB" = x; then
+    RANLIB=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+printf "%s\n" "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    RANLIB=$ac_ct_RANLIB
+  fi
+else
+  RANLIB="$ac_cv_prog_RANLIB"
+fi
+
+    if test -z "$AR" || test -z "$RANLIB"
+then :
+
+        as_fn_error $? "An archiver and ranlib are required. Install binutils or the target toolchain for cross builds; see LINUX.md." "$LINENO" 5
+
+fi
+
+    # Extract the first word of "perl", so it can be a program name with args.
+set dummy perl; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_PERL+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) case $PERL in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PERL="$PERL" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_PERL="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac ;;
+esac
+fi
+PERL=$ac_cv_path_PERL
+if test -n "$PERL"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $PERL" >&5
+printf "%s\n" "$PERL" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Perl 5.10 or later with core modules for bundled OpenSSL" >&5
+printf %s "checking for Perl 5.10 or later with core modules for bundled OpenSSL... " >&6; }
+    if test -n "$PERL" && "$PERL" -e 'use 5.010; use FindBin; use File::Spec; use File::Path; use File::Basename; use Cwd;' >/dev/null 2>&1
+then :
+
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+
+else case e in #(
+  e)
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+        as_fn_error $? "Bundled OpenSSL requires Perl 5.10+ and its core modules. Install perl and, if packaged separately, perl-core; see LINUX.md." "$LINENO" 5
+     ;;
+esac
+fi
+        # Extract the first word of "autoconf", so it can be a program name with args.
+set dummy autoconf; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_AUTOCONF+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) case $AUTOCONF in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_AUTOCONF="$AUTOCONF" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_AUTOCONF="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac ;;
+esac
+fi
+AUTOCONF=$ac_cv_path_AUTOCONF
+if test -n "$AUTOCONF"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $AUTOCONF" >&5
+printf "%s\n" "$AUTOCONF" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+    # Extract the first word of "autoheader", so it can be a program name with args.
+set dummy autoheader; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_AUTOHEADER+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) case $AUTOHEADER in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_AUTOHEADER="$AUTOHEADER" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_AUTOHEADER="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac ;;
+esac
+fi
+AUTOHEADER=$ac_cv_path_AUTOHEADER
+if test -n "$AUTOHEADER"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $AUTOHEADER" >&5
+printf "%s\n" "$AUTOHEADER" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+    # Extract the first word of "autoreconf", so it can be a program name with args.
+set dummy autoreconf; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_AUTORECONF+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) case $AUTORECONF in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_AUTORECONF="$AUTORECONF" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_AUTORECONF="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac ;;
+esac
+fi
+AUTORECONF=$ac_cv_path_AUTORECONF
+if test -n "$AUTORECONF"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $AUTORECONF" >&5
+printf "%s\n" "$AUTORECONF" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+    # Extract the first word of "aclocal", so it can be a program name with args.
+set dummy aclocal; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_ACLOCAL+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) case $ACLOCAL in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ACLOCAL="$ACLOCAL" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_ACLOCAL="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac ;;
+esac
+fi
+ACLOCAL=$ac_cv_path_ACLOCAL
+if test -n "$ACLOCAL"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ACLOCAL" >&5
+printf "%s\n" "$ACLOCAL" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+    # Extract the first word of "automake", so it can be a program name with args.
+set dummy automake; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_AUTOMAKE+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) case $AUTOMAKE in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_AUTOMAKE="$AUTOMAKE" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_AUTOMAKE="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac ;;
+esac
+fi
+AUTOMAKE=$ac_cv_path_AUTOMAKE
+if test -n "$AUTOMAKE"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $AUTOMAKE" >&5
+printf "%s\n" "$AUTOMAKE" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+    # Extract the first word of "libtoolize", so it can be a program name with args.
+set dummy libtoolize; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_LIBTOOLIZE+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) case $LIBTOOLIZE in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_LIBTOOLIZE="$LIBTOOLIZE" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_LIBTOOLIZE="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac ;;
+esac
+fi
+LIBTOOLIZE=$ac_cv_path_LIBTOOLIZE
+if test -n "$LIBTOOLIZE"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBTOOLIZE" >&5
+printf "%s\n" "$LIBTOOLIZE" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+    if test -z "$AUTOCONF" || test -z "$AUTOHEADER" || test -z "$AUTORECONF" || test -z "$ACLOCAL" || test -z "$AUTOMAKE" || test -z "$LIBTOOLIZE"
+then :
+
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: To regenerate build files, install Autoconf, Automake, and Libtool (autoconf, automake, libtool/libtoolize). They are optional when using the shipped configure files; see LINUX.md." >&5
+printf "%s\n" "$as_me: WARNING: To regenerate build files, install Autoconf, Automake, and Libtool (autoconf, automake, libtool/libtoolize). They are optional when using the shipped configure files; see LINUX.md." >&2;}
+
+fi
+    ac_fn_c_check_header_compile "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
+if test "x$ac_cv_header_pthread_h" = xyes
+then :
+
+else case e in #(
+  e)
+        as_fn_error $? "POSIX thread headers are required. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see LINUX.md." "$LINENO" 5
+     ;;
+esac
+fi
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing pthread_create" >&5
+printf %s "checking for library containing pthread_create... " >&6; }
+if test ${ac_cv_search_pthread_create+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char pthread_create (void);
+int
+main (void)
+{
+return pthread_create ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' pthread
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_pthread_create=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_pthread_create+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_pthread_create+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_pthread_create=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_pthread_create" >&5
+printf "%s\n" "$ac_cv_search_pthread_create" >&6; }
+ac_res=$ac_cv_search_pthread_create
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else case e in #(
+  e)
+        as_fn_error $? "POSIX threads are required. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see LINUX.md." "$LINENO" 5
+     ;;
+esac
+fi
+
+    ac_fn_c_check_header_compile "$LINENO" "dlfcn.h" "ac_cv_header_dlfcn_h" "$ac_includes_default"
+if test "x$ac_cv_header_dlfcn_h" = xyes
+then :
+
+else case e in #(
+  e)
+        as_fn_error $? "Dynamic loader headers are required. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see LINUX.md." "$LINENO" 5
+     ;;
+esac
+fi
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing dlopen" >&5
+printf %s "checking for library containing dlopen... " >&6; }
+if test ${ac_cv_search_dlopen+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dlopen (void);
+int
+main (void)
+{
+return dlopen ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' dl
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_dlopen=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_dlopen+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_dlopen+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_dlopen=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_dlopen" >&5
+printf "%s\n" "$ac_cv_search_dlopen" >&6; }
+ac_res=$ac_cv_search_dlopen
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else case e in #(
+  e)
+        as_fn_error $? "Dynamic loading support is required. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see LINUX.md." "$LINENO" 5
+     ;;
+esac
+fi
+
+
+fi
+
+# Check GMP directly for systems without a gmp.pc file.
 case "$host" in
     *-*-darwin*)
         # Bypass GMP check on macOS
         ;;
     *)
+        ac_fn_c_check_header_compile "$LINENO" "gmp.h" "ac_cv_header_gmp_h" "$ac_includes_default"
+if test "x$ac_cv_header_gmp_h" = xyes
+then :
+
+else case e in #(
+  e)
+            as_fn_error $? "GMP development headers are required. Install gmp-devel or libgmp-dev; see LINUX.md." "$LINENO" 5
+         ;;
+esac
+fi
+
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing __gmpz_init" >&5
 printf %s "checking for library containing __gmpz_init... " >&6; }
 if test ${ac_cv_search___gmpz_init+y}
@@ -14507,6 +15324,11 @@ if test "$ac_res" != no
 then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
+else case e in #(
+  e)
+            as_fn_error $? "The GMP library is required. Install gmp-devel or libgmp-dev; see LINUX.md." "$LINENO" 5
+         ;;
+esac
 fi
 
         ;;
@@ -14885,6 +15707,177 @@ fi
 if test "x$enable_credssp" != "xno"
 then :
 
+	if test "$PLATFORM" = linux
+then :
+
+		ac_fn_c_check_header_compile "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
+if test "x$ac_cv_header_zlib_h" = xyes
+then :
+
+else case e in #(
+  e)
+			as_fn_error $? "CredSSP/NLA requires zlib development headers. Install zlib-devel or zlib1g-dev, or use --disable-credssp; see LINUX.md." "$LINENO" 5
+		 ;;
+esac
+fi
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing compress" >&5
+printf %s "checking for library containing compress... " >&6; }
+if test ${ac_cv_search_compress+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char compress (void);
+int
+main (void)
+{
+return compress ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' z
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_compress=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_compress+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_compress+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_compress=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_compress" >&5
+printf "%s\n" "$ac_cv_search_compress" >&6; }
+ac_res=$ac_cv_search_compress
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else case e in #(
+  e)
+			as_fn_error $? "CredSSP/NLA requires zlib. Install zlib-devel or zlib1g-dev, or use --disable-credssp; see LINUX.md." "$LINENO" 5
+		 ;;
+esac
+fi
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing pow" >&5
+printf %s "checking for library containing pow... " >&6; }
+if test ${ac_cv_search_pow+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char pow (void);
+int
+main (void)
+{
+return pow ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' m
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_pow=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_pow+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_pow+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_pow=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_pow" >&5
+printf "%s\n" "$ac_cv_search_pow" >&6; }
+ac_res=$ac_cv_search_pow
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else case e in #(
+  e)
+			as_fn_error $? "CredSSP/NLA requires the system math library. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see LINUX.md." "$LINENO" 5
+		 ;;
+esac
+fi
+
+		ac_fn_c_check_header_compile "$LINENO" "sys/timerfd.h" "ac_cv_header_sys_timerfd_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_timerfd_h" = xyes
+then :
+
+else case e in #(
+  e)
+			as_fn_error $? "Linux CredSSP/NLA requires sys/timerfd.h for WinPR timers. Install the C library development package (glibc-devel, musl-dev, or libc6-dev), or use --disable-credssp; see LINUX.md." "$LINENO" 5
+		 ;;
+esac
+fi
+
+
+fi
 	case "$host" in
 	     *-*-darwin*)
 		ac_fn_c_check_header_compile "$LINENO" "GSS/gssapi.h" "ac_cv_header_GSS_gssapi_h" "$ac_includes_default"
@@ -14987,7 +15980,8 @@ printf "%s\n" "#define WITH_CREDSSP 1" >>confdefs.h
 
 	  else
 		echo
-		echo "CredSSP support requires GSSAPI, install the dependency"
+		echo "CredSSP support requires Kerberos/GSSAPI development files and krb5-gssapi pkg-config metadata."
+		echo "Install krb5-devel or libkrb5-dev; see LINUX.md,"
 		echo "or disable the feature using --disable-credssp."
 		echo
 		exit 1
@@ -14999,6 +15993,70 @@ fi
 if test "$PLATFORM" = linux
 then :
 
+    if test "$cross_compiling" = yes
+then :
+
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: skipping the XWayland runtime check when cross-compiling" >&5
+printf "%s\n" "$as_me: skipping the XWayland runtime check when cross-compiling" >&6;}
+
+else case e in #(
+  e)
+        # Extract the first word of "Xwayland", so it can be a program name with args.
+set dummy Xwayland; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_XWAYLAND+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) case $XWAYLAND in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_XWAYLAND="$XWAYLAND" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_XWAYLAND="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac ;;
+esac
+fi
+XWAYLAND=$ac_cv_path_XWAYLAND
+if test -n "$XWAYLAND"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $XWAYLAND" >&5
+printf "%s\n" "$XWAYLAND" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+        if test -z "$XWAYLAND"
+then :
+
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Xwayland was not found in PATH. Wayland sessions require an XWayland runtime package (usually xwayland or xorg-x11-server-Xwayland). X11 sessions still work; see LINUX.md." >&5
+printf "%s\n" "$as_me: WARNING: Xwayland was not found in PATH. Wayland sessions require an XWayland runtime package (usually xwayland or xorg-x11-server-Xwayland). X11 sessions still work; see LINUX.md." >&2;}
+
+fi
+     ;;
+esac
+fi
 
 pkg_failed=no
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for xrandr" >&5
@@ -15058,11 +16116,13 @@ fi
         # Put the nasty error message in config.log where it belongs
         echo "$XRANDR_PKG_ERRORS" >&5
 
-        :
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Optional Xrandr support is unavailable. Install the Xrandr development package (libXrandr-devel or libxrandr-dev) to enable it; see LINUX.md." >&5
+printf "%s\n" "$as_me: Optional Xrandr support is unavailable. Install the Xrandr development package (libXrandr-devel or libxrandr-dev) to enable it; see LINUX.md." >&6;}
 elif test $pkg_failed = untried; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-        :
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Optional Xrandr support is unavailable. Install the Xrandr development package (libXrandr-devel or libxrandr-dev) to enable it; see LINUX.md." >&5
+printf "%s\n" "$as_me: Optional Xrandr support is unavailable. Install the Xrandr development package (libXrandr-devel or libxrandr-dev) to enable it; see LINUX.md." >&6;}
 else
         XRANDR_CFLAGS=$pkg_cv_XRANDR_CFLAGS
         XRANDR_LIBS=$pkg_cv_XRANDR_LIBS
@@ -15135,31 +16195,15 @@ fi
         # Put the nasty error message in config.log where it belongs
         echo "$XCURSOR_PKG_ERRORS" >&5
 
-        as_fn_error $? "Package requirements (xcursor) were not met:
 
-$XCURSOR_PKG_ERRORS
+        as_fn_error $? "Xcursor development files and pkg-config metadata are required. Install libXcursor-devel or libxcursor-dev; see LINUX.md." "$LINENO" 5
 
-Consider adjusting the PKG_CONFIG_PATH environment variable if you
-installed software in a non-standard prefix.
-
-Alternatively, you may set the environment variables XCURSOR_CFLAGS
-and XCURSOR_LIBS to avoid the need to call pkg-config.
-See the pkg-config man page for more details." "$LINENO" 5
 elif test $pkg_failed = untried; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-        { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
-printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
-as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
-is in your PATH or set the PKG_CONFIG environment variable to the full
-path to pkg-config.
 
-Alternatively, you may set the environment variables XCURSOR_CFLAGS
-and XCURSOR_LIBS to avoid the need to call pkg-config.
-See the pkg-config man page for more details.
+        as_fn_error $? "Xcursor development files and pkg-config metadata are required. Install libXcursor-devel or libxcursor-dev; see LINUX.md." "$LINENO" 5
 
-To get pkg-config, see <http://pkg-config.freedesktop.org/>.
-See 'config.log' for more details" "$LINENO" 5; }
 else
         XCURSOR_CFLAGS=$pkg_cv_XCURSOR_CFLAGS
         XCURSOR_LIBS=$pkg_cv_XCURSOR_LIBS
@@ -15256,7 +16300,7 @@ fi
             LIBS="$LIBS $LIBTASN1_LIBS"
         else
             echo
-            echo "rdesktop requires libtasn1. Please install the dependency"
+            echo "rdesktop requires libtasn1 development files. Install libtasn1-devel or libtasn1-6-dev; see LINUX.md."
             echo
             exit 1
         fi
@@ -15347,7 +16391,7 @@ fi
             LIBS="$LIBS $NETTLE_LIBS"
         else
             echo
-            echo "rdesktop requires Nettle. Please install the dependency"
+            echo "rdesktop requires Nettle development files. Install nettle-devel or nettle-dev; see LINUX.md."
             echo
             exit 1
         fi
@@ -15438,7 +16482,7 @@ fi
             LIBS="$LIBS $HOGWEED_LIBS"
         else
             echo
-            echo "rdesktop requires hogweed. Please install the dependency"
+            echo "rdesktop requires Hogweed development files, normally part of nettle-devel or nettle-dev; see LINUX.md."
             echo
             exit 1
         fi
@@ -15529,7 +16573,7 @@ fi
             LIBS="$LIBS $GNUTLS_LIBS"
         else
             echo
-            echo "rdesktop requires GnuTLS. Please install the dependency"
+            echo "rdesktop requires GnuTLS >= 3.2.0 development files. Install gnutls-devel or libgnutls28-dev; see LINUX.md."
             echo
             exit 1
         fi
@@ -15654,7 +16698,7 @@ printf "%s\n" "#define WITH_SCARD 1" >>confdefs.h
 
 	else
 	   echo
-	   echo "SmartCard support requires PCSC, install the dependency"
+	   echo "SmartCard support requires PCSC-lite development files. Install pcsc-lite-devel or libpcsclite-dev; see LINUX.md,"
 	   echo "or disable the feature using --disable-smartcard."
 	   echo
 	   exit 1

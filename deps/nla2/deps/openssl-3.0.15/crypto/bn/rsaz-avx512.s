@@ -1,36 +1,42 @@
 
-.globl	_ossl_rsaz_avx512ifma_eligible
-
-.p2align	5
-_ossl_rsaz_avx512ifma_eligible:
-	movl	_OPENSSL_ia32cap_P+8(%rip),%ecx
+.globl	ossl_rsaz_avx512ifma_eligible
+.type	ossl_rsaz_avx512ifma_eligible,@function
+.align	32
+ossl_rsaz_avx512ifma_eligible:
+	movl	OPENSSL_ia32cap_P+8(%rip),%ecx
 	xorl	%eax,%eax
 	andl	$2149777408,%ecx
 	cmpl	$2149777408,%ecx
 	cmovel	%ecx,%eax
 	.byte	0xf3,0xc3
-
+.size	ossl_rsaz_avx512ifma_eligible, .-ossl_rsaz_avx512ifma_eligible
 .text	
 
-.globl	_ossl_rsaz_amm52x20_x1_256
-
-.p2align	5
-_ossl_rsaz_amm52x20_x1_256:
-
+.globl	ossl_rsaz_amm52x20_x1_256
+.type	ossl_rsaz_amm52x20_x1_256,@function
+.align	32
+ossl_rsaz_amm52x20_x1_256:
+.cfi_startproc	
 .byte	243,15,30,250
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
-L$rsaz_amm52x20_x1_256_body:
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
+.Lrsaz_amm52x20_x1_256_body:
 
 
 	vpxord	%ymm0,%ymm0,%ymm0
@@ -48,8 +54,8 @@ L$rsaz_amm52x20_x1_256_body:
 
 	movl	$5,%ebx
 
-.p2align	5
-L$loop5:
+.align	32
+.Lloop5:
 	movq	0(%r11),%r13
 
 	vpbroadcastq	%r13,%ymm3
@@ -276,9 +282,9 @@ L$loop5:
 	vpmadd52huq	128(%rcx),%ymm4,%ymm19
 	leaq	32(%r11),%r11
 	decl	%ebx
-	jne	L$loop5
+	jne	.Lloop5
 
-	vmovdqa64	L$mask52x4(%rip),%ymm4
+	vmovdqa64	.Lmask52x4(%rip),%ymm4
 
 	vpbroadcastq	%r9,%ymm3
 	vpblendd	$3,%ymm3,%ymm1,%ymm1
@@ -390,51 +396,57 @@ L$loop5:
 
 	vzeroupper
 	movq	0(%rsp),%r15
-
+.cfi_restore	%r15
 	movq	8(%rsp),%r14
-
+.cfi_restore	%r14
 	movq	16(%rsp),%r13
-
+.cfi_restore	%r13
 	movq	24(%rsp),%r12
-
+.cfi_restore	%r12
 	movq	32(%rsp),%rbp
-
+.cfi_restore	%rbp
 	movq	40(%rsp),%rbx
-
+.cfi_restore	%rbx
 	leaq	48(%rsp),%rsp
-
-L$rsaz_amm52x20_x1_256_epilogue:
+.cfi_adjust_cfa_offset	-48
+.Lrsaz_amm52x20_x1_256_epilogue:
 	.byte	0xf3,0xc3
-
-
+.cfi_endproc	
+.size	ossl_rsaz_amm52x20_x1_256, .-ossl_rsaz_amm52x20_x1_256
 .data	
-.p2align	5
-L$mask52x4:
+.align	32
+.Lmask52x4:
 .quad	0xfffffffffffff
 .quad	0xfffffffffffff
 .quad	0xfffffffffffff
 .quad	0xfffffffffffff
 .text	
 
-.globl	_ossl_rsaz_amm52x20_x2_256
-
-.p2align	5
-_ossl_rsaz_amm52x20_x2_256:
-
+.globl	ossl_rsaz_amm52x20_x2_256
+.type	ossl_rsaz_amm52x20_x2_256,@function
+.align	32
+ossl_rsaz_amm52x20_x2_256:
+.cfi_startproc	
 .byte	243,15,30,250
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
-L$rsaz_amm52x20_x2_256_body:
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
+.Lrsaz_amm52x20_x2_256_body:
 
 
 	vpxord	%ymm0,%ymm0,%ymm0
@@ -457,8 +469,8 @@ L$rsaz_amm52x20_x2_256_body:
 
 	movl	$20,%ebx
 
-.p2align	5
-L$loop20:
+.align	32
+.Lloop20:
 	movq	0(%r11),%r13
 
 	vpbroadcastq	%r13,%ymm3
@@ -573,9 +585,9 @@ L$loop20:
 	vpmadd52huq	288(%rcx),%ymm4,%ymm23
 	leaq	8(%r11),%r11
 	decl	%ebx
-	jne	L$loop20
+	jne	.Lloop20
 
-	vmovdqa64	L$mask52x4(%rip),%ymm4
+	vmovdqa64	.Lmask52x4(%rip),%ymm4
 
 	vpbroadcastq	%r9,%ymm3
 	vpblendd	$3,%ymm3,%ymm1,%ymm1
@@ -795,36 +807,36 @@ L$loop20:
 
 	vzeroupper
 	movq	0(%rsp),%r15
-
+.cfi_restore	%r15
 	movq	8(%rsp),%r14
-
+.cfi_restore	%r14
 	movq	16(%rsp),%r13
-
+.cfi_restore	%r13
 	movq	24(%rsp),%r12
-
+.cfi_restore	%r12
 	movq	32(%rsp),%rbp
-
+.cfi_restore	%rbp
 	movq	40(%rsp),%rbx
-
+.cfi_restore	%rbx
 	leaq	48(%rsp),%rsp
-
-L$rsaz_amm52x20_x2_256_epilogue:
+.cfi_adjust_cfa_offset	-48
+.Lrsaz_amm52x20_x2_256_epilogue:
 	.byte	0xf3,0xc3
-
-
+.cfi_endproc	
+.size	ossl_rsaz_amm52x20_x2_256, .-ossl_rsaz_amm52x20_x2_256
 .text	
 
-.p2align	5
-.globl	_ossl_extract_multiplier_2x20_win5
-
-_ossl_extract_multiplier_2x20_win5:
-
+.align	32
+.globl	ossl_extract_multiplier_2x20_win5
+.type	ossl_extract_multiplier_2x20_win5,@function
+ossl_extract_multiplier_2x20_win5:
+.cfi_startproc	
 .byte	243,15,30,250
 	leaq	(%rcx,%rcx,4),%rax
 	salq	$5,%rax
 	addq	%rax,%rsi
 
-	vmovdqa64	L$ones(%rip),%ymm23
+	vmovdqa64	.Lones(%rip),%ymm23
 	vpbroadcastq	%rdx,%ymm22
 	leaq	10240(%rsi),%rax
 
@@ -835,8 +847,8 @@ _ossl_extract_multiplier_2x20_win5:
 	vmovdqa64	%ymm4,%ymm0
 	vmovdqa64	%ymm4,%ymm21
 
-.p2align	5
-L$loop:
+.align	32
+.Lloop:
 	vpcmpq	$0,%ymm21,%ymm22,%k1
 	addq	$320,%rsi
 	vpaddq	%ymm23,%ymm21,%ymm21
@@ -851,7 +863,7 @@ L$loop:
 	vpblendmq	%ymm19,%ymm3,%ymm3{%k1}
 	vpblendmq	%ymm20,%ymm4,%ymm4{%k1}
 	cmpq	%rsi,%rax
-	jne	L$loop
+	jne	.Lloop
 
 	vmovdqu64	%ymm0,(%rdi)
 	vmovdqu64	%ymm1,32(%rdi)
@@ -860,9 +872,30 @@ L$loop:
 	vmovdqu64	%ymm4,128(%rdi)
 
 	.byte	0xf3,0xc3
-
-
+.cfi_endproc	
+.size	ossl_extract_multiplier_2x20_win5, .-ossl_extract_multiplier_2x20_win5
 .data	
-.p2align	5
-L$ones:
+.align	32
+.Lones:
 .quad	1,1,1,1
+	.section ".note.gnu.property", "a"
+	.p2align 3
+	.long 1f - 0f
+	.long 4f - 1f
+	.long 5
+0:
+	# "GNU" encoded with .byte, since .asciz isn't supported
+	# on Solaris.
+	.byte 0x47
+	.byte 0x4e
+	.byte 0x55
+	.byte 0
+1:
+	.p2align 3
+	.long 0xc0000002
+	.long 3f - 2f
+2:
+	.long 3
+3:
+	.p2align 3
+4:

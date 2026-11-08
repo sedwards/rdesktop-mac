@@ -6,13 +6,51 @@ macOS application. `configure` selects Linux from the configured host OS, and
 and system GnuTLS, Nettle, Hogweed, GMP, and libtasn1 libraries. Apple frameworks
 and Objective-C GUI objects are excluded from this build.
 
-## Ubuntu and Debian dependencies
+## Dependencies
+
+`configure` checks the Linux compiler and linker, GNU Make, an archiver, ranlib,
+Perl 5.10+ with core modules (for bundled OpenSSL), and the development libraries
+below. Development packages must include headers, libraries, and, where used,
+pkg-config metadata. A runtime library package alone is usually insufficient.
+
+Package names vary by distribution; these are common names or naming patterns:
+
+| Requirement | When needed | Package guidance |
+| --- | --- | --- |
+| C compiler, C library headers, POSIX threads and dynamic loader | All builds | `gcc` or `clang`; `glibc-devel`, `musl-dev`, or `libc6-dev` |
+| GNU Make, archiver and ranlib | All builds | `make`/`gmake` and `binutils`; use target tools for cross builds |
+| Perl 5.10+ and core modules | Bundled OpenSSL | `perl`; some distributions also need `perl-core` or individual core-module packages |
+| pkg-config command | All Linux builds | `pkg-config` or a `pkgconf` compatibility package |
+| X11 and Xcursor development files | All Linux builds | `libX11-devel`/`libx11-dev` and `libXcursor-devel`/`libxcursor-dev` |
+| GMP development files | All Linux builds | `gmp-devel`/`libgmp-dev` |
+| GnuTLS >= 3.2.0 development files | All Linux builds | `gnutls-devel`/`libgnutls28-dev` |
+| Nettle and Hogweed development files | All Linux builds | `nettle-devel`/`nettle-dev`; Hogweed is normally included |
+| libtasn1 development files | All Linux builds | `libtasn1-devel`/`libtasn1-6-dev` |
+| Kerberos/GSSAPI development files | CredSSP/NLA, enabled by default | `krb5-devel`/`libkrb5-dev`, providing `krb5-gssapi.pc` |
+| zlib headers/library, system math library, `sys/timerfd.h` | CredSSP/NLA, enabled by default | `zlib-devel`/`zlib1g-dev` plus the C library development package |
+| Xrandr development files | Optional; detected automatically | `libXrandr-devel`/`libxrandr-dev` |
+| XWayland executable | Runtime in Wayland sessions | `xwayland`/`xorg-x11-server-Xwayland`; absence only warns during native configuration |
+| PCSC-lite development files | Optional `--enable-smartcard` | `pcsc-lite-devel`/`libpcsclite-dev`, providing `libpcsclite.pc` |
+| Autoconf, Automake, Libtool, pkg-config m4 macros | Regenerating build files | `autoconf`, `automake`, `libtool`/`libtoolize`, plus the pkg-config macros; missing tools only warn in `configure` |
+
+For cross builds, development libraries and binutils must target the configured
+host. Regeneration tools and Perl run on the build machine. `configure` checks
+availability, not whether an X11/XWayland server is running or accepts your
+desktop credentials. It does not install packages or configure Kerberos.
+
+For dependencies installed outside the default search paths, set
+`PKG_CONFIG_PATH` to their pkg-config metadata directories, `CPPFLAGS` to their
+header include flags, and `LDFLAGS` to their library search flags before running
+`configure`. Check failures name the missing capability and suggest development
+packages rather than assuming one distribution's package manager.
+
+### Ubuntu and Debian
 
 On Debian or Ubuntu, install the compiler, build tools, and development libraries:
 
 ```sh
 sudo apt update
-sudo apt install build-essential pkg-config autoconf automake \
+sudo apt install build-essential perl pkg-config autoconf automake \
   libx11-dev libxcursor-dev libxrandr-dev libkrb5-dev \
   libgnutls28-dev nettle-dev libgmp-dev libtasn1-6-dev zlib1g-dev xwayland \
   libtool
@@ -20,12 +58,12 @@ sudo apt install build-essential pkg-config autoconf automake \
 
 This is the consolidated package list for building and running the client on
 a Wayland desktop. XWayland is needed for Wayland sessions; Xrandr is optional.
-X11 and Xcursor are required. `zlib1g-dev` supplies `zlib.h` for the bundled
-NLA engine; install it if compilation reports that header is missing. Autoconf and Automake provide
+X11 and Xcursor are required. `zlib1g-dev` supplies the headers and library for
+the bundled NLA engine; configuration checks both before building. Autoconf and Automake provide
 `autoconf`, `autoheader`, and `aclocal` for regenerating configure files after
 changes to `configure.ac`.
 
-### Ubuntu GSSAPI and Kerberos setup
+### GSSAPI and Kerberos setup
 
 `libkrb5-dev` supplies GSSAPI for the default CredSSP/NLA support. Kerberos
 setup prompts configure runtime authentication; completing them does not
@@ -195,7 +233,8 @@ separate NLA library installation is required.
 
 The bundled NLA, FreeRDP, and WinPR build uses `-Werror` and disables FreeRDP's
 deprecated 3.x compatibility APIs. Linux configuration detects `timerfd` headers
-to select WinPR's native Linux timer backend. OpenSSL uses its own build flags.
+to select WinPR's native Linux timer backend. Bundled OpenSSL and the client
+test suite also compile with `-Werror`.
 
 To omit CredSSP, pass `--disable-credssp`. Servers requiring Network Level
 Authentication (NLA) cannot be used with CredSSP disabled.

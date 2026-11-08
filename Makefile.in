@@ -15,9 +15,10 @@ VERSION     = @PACKAGE_VERSION@
 KEYMAP_PATH = $(datadir)/rdesktop/keymaps/
 
 CC          = @CC@
+PERL        = @PERL@
 INSTALL     = @INSTALL@
 CFLAGS      = @CFLAGS@ @DEFS@ -DKEYMAP_PATH=\"$(KEYMAP_PATH)\" @PLATFORM_CFLAGS@
-# Apply strict warnings only to this client's sources, never dependency builds.
+# Strict warnings for the client and build helpers; dependencies set their own flags.
 LOCAL_CFLAGS = -Werror
 LDFLAGS     = @LDFLAGS@
 LDLIBS      = @NLA_LIBS@ @PLATFORM_LIBS@ @LIBS@
@@ -44,8 +45,8 @@ OPENSSL_LIBS = $(OPENSSL_DIR)/libssl.a $(OPENSSL_DIR)/libcrypto.a
 $(OPENSSL_DIR)/libssl.a: $(OPENSSL_DIR)/libcrypto.a
 	@test -f $@ || { cd $(OPENSSL_DIR) && $(MAKE) build_libs; }
 
-$(OPENSSL_DIR)/libcrypto.a:
-	cd $(OPENSSL_DIR) && ./Configure no-shared no-tests no-module enable-legacy && $(MAKE) clean && $(MAKE) build_libs
+$(OPENSSL_DIR)/libcrypto.a: Makefile.in
+	cd $(OPENSSL_DIR) && $(PERL) ./Configure no-shared no-tests no-module enable-legacy -Werror && $(MAKE) clean && $(MAKE) build_libs
 
 ./deps/nla2/libnlav2.a: $(OPENSSL_LIBS) deps/nla2/Makefile.in deps/nla2/Makefile.sources deps/nla2/configure deps/nla2/FreeRDP/winpr/include/winpr/config.h
 	cd deps/nla2 && ./configure --host=@host@ && $(MAKE) libnlav2.a
@@ -99,7 +100,7 @@ bundle: rdesktop-mac
 	cp -R keymaps/ rdesktop-mac.app/Contents/Resources/keymaps/
 	if [ -f Resources/rdesktop-mac.svg ]; then \
 		qlmanage -t -s 512 -o . Resources/rdesktop-mac.svg; \
-		clang -O2 -framework AppKit -framework Foundation make_icns.m -o make_icns; \
+		$(CC) $(CFLAGS) $(LOCAL_CFLAGS) -framework AppKit -framework Foundation make_icns.m -o make_icns; \
 		./make_icns rdesktop-mac.svg.png rdesktop-mac.app/Contents/Resources/rdesktop-mac.icns; \
 		rm -f make_icns rdesktop-mac.svg.png; \
 	fi

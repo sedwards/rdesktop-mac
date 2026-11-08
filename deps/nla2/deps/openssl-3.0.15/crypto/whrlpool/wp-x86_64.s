@@ -1,24 +1,24 @@
 .text	
 
-.globl	_whirlpool_block
-
-.p2align	4
-_whirlpool_block:
-
+.globl	whirlpool_block
+.type	whirlpool_block,@function
+.align	16
+whirlpool_block:
+.cfi_startproc	
 	movq	%rsp,%rax
-
+.cfi_def_cfa_register	%rax
 	pushq	%rbx
-
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_offset	%r15,-56
 
 	subq	$128+40,%rsp
 	andq	$-64,%rsp
@@ -28,11 +28,11 @@ _whirlpool_block:
 	movq	%rsi,8(%r10)
 	movq	%rdx,16(%r10)
 	movq	%rax,32(%r10)
-
-L$prologue:
+.cfi_escape	0x0f,0x06,0x77,0xa0,0x01,0x06,0x23,0x08
+.Lprologue:
 
 	movq	%r10,%rbx
-	leaq	L$table(%rip),%rbp
+	leaq	.Ltable(%rip),%rbp
 
 	xorq	%rcx,%rcx
 	xorq	%rdx,%rdx
@@ -44,7 +44,7 @@ L$prologue:
 	movq	40(%rdi),%r13
 	movq	48(%rdi),%r14
 	movq	56(%rdi),%r15
-L$outerloop:
+.Louterloop:
 	movq	%r8,0(%rsp)
 	movq	%r9,8(%rsp)
 	movq	%r10,16(%rsp)
@@ -71,9 +71,9 @@ L$outerloop:
 	movq	%r15,64+56(%rsp)
 	xorq	%rsi,%rsi
 	movq	%rsi,24(%rbx)
-	jmp	L$round
-.p2align	4
-L$round:
+	jmp	.Lround
+.align	16
+.Lround:
 	movq	4096(%rbp,%rsi,8),%r8
 	movl	0(%rsp),%eax
 	movl	4(%rsp),%ebx
@@ -539,7 +539,7 @@ L$round:
 	movq	24(%rbx),%rsi
 	addq	$1,%rsi
 	cmpq	$10,%rsi
-	je	L$roundsdone
+	je	.Lroundsdone
 
 	movq	%rsi,24(%rbx)
 	movq	%r8,64+0(%rsp)
@@ -550,9 +550,9 @@ L$round:
 	movq	%r13,64+40(%rsp)
 	movq	%r14,64+48(%rsp)
 	movq	%r15,64+56(%rsp)
-	jmp	L$round
-.p2align	4
-L$roundsdone:
+	jmp	.Lround
+.align	16
+.Lroundsdone:
 	movq	0(%rbx),%rdi
 	movq	8(%rbx),%rsi
 	movq	16(%rbx),%rax
@@ -582,35 +582,35 @@ L$roundsdone:
 	movq	%r15,56(%rdi)
 	leaq	64(%rsi),%rsi
 	subq	$1,%rax
-	jz	L$alldone
+	jz	.Lalldone
 	movq	%rsi,8(%rbx)
 	movq	%rax,16(%rbx)
-	jmp	L$outerloop
-L$alldone:
+	jmp	.Louterloop
+.Lalldone:
 	movq	32(%rbx),%rsi
-
+.cfi_def_cfa	%rsi,8
 	movq	-48(%rsi),%r15
-
+.cfi_restore	%r15
 	movq	-40(%rsi),%r14
-
+.cfi_restore	%r14
 	movq	-32(%rsi),%r13
-
+.cfi_restore	%r13
 	movq	-24(%rsi),%r12
-
+.cfi_restore	%r12
 	movq	-16(%rsi),%rbp
-
+.cfi_restore	%rbp
 	movq	-8(%rsi),%rbx
-
+.cfi_restore	%rbx
 	leaq	(%rsi),%rsp
-
-L$epilogue:
+.cfi_def_cfa_register	%rsp
+.Lepilogue:
 	.byte	0xf3,0xc3
+.cfi_endproc	
+.size	whirlpool_block,.-whirlpool_block
 
-
-
-.p2align	6
-
-L$table:
+.align	64
+.type	.Ltable,@object
+.Ltable:
 .byte	24,24,96,24,192,120,48,216,24,24,96,24,192,120,48,216
 .byte	35,35,140,35,5,175,70,38,35,35,140,35,5,175,70,38
 .byte	198,198,63,198,126,249,145,184,198,198,63,198,126,249,145,184
@@ -877,3 +877,24 @@ L$table:
 .byte	228,39,65,139,167,125,149,216
 .byte	251,238,124,102,221,23,71,158
 .byte	202,45,191,7,173,90,131,51
+	.section ".note.gnu.property", "a"
+	.p2align 3
+	.long 1f - 0f
+	.long 4f - 1f
+	.long 5
+0:
+	# "GNU" encoded with .byte, since .asciz isn't supported
+	# on Solaris.
+	.byte 0x47
+	.byte 0x4e
+	.byte 0x55
+	.byte 0
+1:
+	.p2align 3
+	.long 0xc0000002
+	.long 3f - 2f
+2:
+	.long 3
+3:
+	.p2align 3
+4:

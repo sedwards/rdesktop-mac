@@ -2,39 +2,45 @@
 
 
 
-.globl	_rsaz_512_sqr
-
-.p2align	5
-_rsaz_512_sqr:
-
+.globl	rsaz_512_sqr
+.type	rsaz_512_sqr,@function
+.align	32
+rsaz_512_sqr:
+.cfi_startproc	
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
 
 	subq	$128+24,%rsp
-
-L$sqr_body:
+.cfi_adjust_cfa_offset	128+24
+.Lsqr_body:
 .byte	102,72,15,110,202
 	movq	(%rsi),%rdx
 	movq	8(%rsi),%rax
 	movq	%rcx,128(%rsp)
 	movl	$0x80100,%r11d
-	andl	_OPENSSL_ia32cap_P+8(%rip),%r11d
+	andl	OPENSSL_ia32cap_P+8(%rip),%r11d
 	cmpl	$0x80100,%r11d
-	je	L$oop_sqrx
-	jmp	L$oop_sqr
+	je	.Loop_sqrx
+	jmp	.Loop_sqr
 
-.p2align	5
-L$oop_sqr:
+.align	32
+.Loop_sqr:
 	movl	%r8d,128+8(%rsp)
 
 	movq	%rdx,%rbx
@@ -400,11 +406,11 @@ L$oop_sqr:
 	movq	%rdi,%rsi
 
 	decl	%r8d
-	jnz	L$oop_sqr
-	jmp	L$sqr_tail
+	jnz	.Loop_sqr
+	jmp	.Lsqr_tail
 
-.p2align	5
-L$oop_sqrx:
+.align	32
+.Loop_sqrx:
 	movl	%r8d,128+8(%rsp)
 .byte	102,72,15,110,199
 
@@ -674,58 +680,64 @@ L$oop_sqrx:
 	movq	%rdi,%rsi
 
 	decl	%r8d
-	jnz	L$oop_sqrx
+	jnz	.Loop_sqrx
 
-L$sqr_tail:
+.Lsqr_tail:
 
 	leaq	128+24+48(%rsp),%rax
-
+.cfi_def_cfa	%rax,8
 	movq	-48(%rax),%r15
-
+.cfi_restore	%r15
 	movq	-40(%rax),%r14
-
+.cfi_restore	%r14
 	movq	-32(%rax),%r13
-
+.cfi_restore	%r13
 	movq	-24(%rax),%r12
-
+.cfi_restore	%r12
 	movq	-16(%rax),%rbp
-
+.cfi_restore	%rbp
 	movq	-8(%rax),%rbx
-
+.cfi_restore	%rbx
 	leaq	(%rax),%rsp
-
-L$sqr_epilogue:
+.cfi_def_cfa_register	%rsp
+.Lsqr_epilogue:
 	.byte	0xf3,0xc3
-
-
-.globl	_rsaz_512_mul
-
-.p2align	5
-_rsaz_512_mul:
-
+.cfi_endproc	
+.size	rsaz_512_sqr,.-rsaz_512_sqr
+.globl	rsaz_512_mul
+.type	rsaz_512_mul,@function
+.align	32
+rsaz_512_mul:
+.cfi_startproc	
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
 
 	subq	$128+24,%rsp
-
-L$mul_body:
+.cfi_adjust_cfa_offset	128+24
+.Lmul_body:
 .byte	102,72,15,110,199
 .byte	102,72,15,110,201
 	movq	%r8,128(%rsp)
 	movl	$0x80100,%r11d
-	andl	_OPENSSL_ia32cap_P+8(%rip),%r11d
+	andl	OPENSSL_ia32cap_P+8(%rip),%r11d
 	cmpl	$0x80100,%r11d
-	je	L$mulx
+	je	.Lmulx
 	movq	(%rdx),%rbx
 	movq	%rdx,%rbp
 	call	__rsaz_512_mul
@@ -743,10 +755,10 @@ L$mul_body:
 	movq	56(%rsp),%r15
 
 	call	__rsaz_512_reduce
-	jmp	L$mul_tail
+	jmp	.Lmul_tail
 
-.p2align	5
-L$mulx:
+.align	32
+.Lmulx:
 	movq	%rdx,%rbp
 	movq	(%rdx),%rdx
 	call	__rsaz_512_mulx
@@ -765,7 +777,7 @@ L$mulx:
 	movq	56(%rsp),%r15
 
 	call	__rsaz_512_reducex
-L$mul_tail:
+.Lmul_tail:
 	addq	64(%rsp),%r8
 	adcq	72(%rsp),%r9
 	adcq	80(%rsp),%r10
@@ -779,49 +791,55 @@ L$mul_tail:
 	call	__rsaz_512_subtract
 
 	leaq	128+24+48(%rsp),%rax
-
+.cfi_def_cfa	%rax,8
 	movq	-48(%rax),%r15
-
+.cfi_restore	%r15
 	movq	-40(%rax),%r14
-
+.cfi_restore	%r14
 	movq	-32(%rax),%r13
-
+.cfi_restore	%r13
 	movq	-24(%rax),%r12
-
+.cfi_restore	%r12
 	movq	-16(%rax),%rbp
-
+.cfi_restore	%rbp
 	movq	-8(%rax),%rbx
-
+.cfi_restore	%rbx
 	leaq	(%rax),%rsp
-
-L$mul_epilogue:
+.cfi_def_cfa_register	%rsp
+.Lmul_epilogue:
 	.byte	0xf3,0xc3
-
-
-.globl	_rsaz_512_mul_gather4
-
-.p2align	5
-_rsaz_512_mul_gather4:
-
+.cfi_endproc	
+.size	rsaz_512_mul,.-rsaz_512_mul
+.globl	rsaz_512_mul_gather4
+.type	rsaz_512_mul_gather4,@function
+.align	32
+rsaz_512_mul_gather4:
+.cfi_startproc	
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
 
 	subq	$152,%rsp
-
-L$mul_gather4_body:
+.cfi_adjust_cfa_offset	152
+.Lmul_gather4_body:
 	movd	%r9d,%xmm8
-	movdqa	L$inc+16(%rip),%xmm1
-	movdqa	L$inc(%rip),%xmm0
+	movdqa	.Linc+16(%rip),%xmm1
+	movdqa	.Linc(%rip),%xmm0
 
 	pshufd	$0,%xmm8,%xmm8
 	movdqa	%xmm1,%xmm7
@@ -874,9 +892,9 @@ L$mul_gather4_body:
 	pshufd	$0x4e,%xmm8,%xmm9
 	por	%xmm9,%xmm8
 	movl	$0x80100,%r11d
-	andl	_OPENSSL_ia32cap_P+8(%rip),%r11d
+	andl	OPENSSL_ia32cap_P+8(%rip),%r11d
 	cmpl	$0x80100,%r11d
-	je	L$mulx_gather
+	je	.Lmulx_gather
 .byte	102,76,15,126,195
 
 	movq	%r8,128(%rsp)
@@ -934,10 +952,10 @@ L$mul_gather4_body:
 
 	leaq	8(%rsp),%rdi
 	movl	$7,%ecx
-	jmp	L$oop_mul_gather
+	jmp	.Loop_mul_gather
 
-.p2align	5
-L$oop_mul_gather:
+.align	32
+.Loop_mul_gather:
 	movdqa	0(%rbp),%xmm8
 	movdqa	16(%rbp),%xmm9
 	movdqa	32(%rbp),%xmm10
@@ -1033,7 +1051,7 @@ L$oop_mul_gather:
 	leaq	8(%rdi),%rdi
 
 	decl	%ecx
-	jnz	L$oop_mul_gather
+	jnz	.Loop_mul_gather
 
 	movq	%r8,(%rdi)
 	movq	%r9,8(%rdi)
@@ -1057,10 +1075,10 @@ L$oop_mul_gather:
 	movq	56(%rsp),%r15
 
 	call	__rsaz_512_reduce
-	jmp	L$mul_gather_tail
+	jmp	.Lmul_gather_tail
 
-.p2align	5
-L$mulx_gather:
+.align	32
+.Lmulx_gather:
 .byte	102,76,15,126,194
 
 	movq	%r8,128(%rsp)
@@ -1096,10 +1114,10 @@ L$mulx_gather:
 	adcxq	%rdi,%r15
 
 	movq	$-7,%rcx
-	jmp	L$oop_mulx_gather
+	jmp	.Loop_mulx_gather
 
-.p2align	5
-L$oop_mulx_gather:
+.align	32
+.Loop_mulx_gather:
 	movdqa	0(%rbp),%xmm8
 	movdqa	16(%rbp),%xmm9
 	movdqa	32(%rbp),%xmm10
@@ -1166,7 +1184,7 @@ L$oop_mulx_gather:
 	adcxq	%rdi,%r15
 
 	incq	%rcx
-	jnz	L$oop_mulx_gather
+	jnz	.Loop_mulx_gather
 
 	movq	%r8,64(%rsp)
 	movq	%r9,64+8(%rsp)
@@ -1192,7 +1210,7 @@ L$oop_mulx_gather:
 
 	call	__rsaz_512_reducex
 
-L$mul_gather_tail:
+.Lmul_gather_tail:
 	addq	64(%rsp),%r8
 	adcq	72(%rsp),%r9
 	adcq	80(%rsp),%r10
@@ -1206,47 +1224,53 @@ L$mul_gather_tail:
 	call	__rsaz_512_subtract
 
 	leaq	128+24+48(%rsp),%rax
-
+.cfi_def_cfa	%rax,8
 	movq	-48(%rax),%r15
-
+.cfi_restore	%r15
 	movq	-40(%rax),%r14
-
+.cfi_restore	%r14
 	movq	-32(%rax),%r13
-
+.cfi_restore	%r13
 	movq	-24(%rax),%r12
-
+.cfi_restore	%r12
 	movq	-16(%rax),%rbp
-
+.cfi_restore	%rbp
 	movq	-8(%rax),%rbx
-
+.cfi_restore	%rbx
 	leaq	(%rax),%rsp
-
-L$mul_gather4_epilogue:
+.cfi_def_cfa_register	%rsp
+.Lmul_gather4_epilogue:
 	.byte	0xf3,0xc3
-
-
-.globl	_rsaz_512_mul_scatter4
-
-.p2align	5
-_rsaz_512_mul_scatter4:
-
+.cfi_endproc	
+.size	rsaz_512_mul_gather4,.-rsaz_512_mul_gather4
+.globl	rsaz_512_mul_scatter4
+.type	rsaz_512_mul_scatter4,@function
+.align	32
+rsaz_512_mul_scatter4:
+.cfi_startproc	
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
 
 	movl	%r9d,%r9d
 	subq	$128+24,%rsp
-
-L$mul_scatter4_body:
+.cfi_adjust_cfa_offset	128+24
+.Lmul_scatter4_body:
 	leaq	(%r8,%r9,8),%r8
 .byte	102,72,15,110,199
 .byte	102,72,15,110,202
@@ -1255,9 +1279,9 @@ L$mul_scatter4_body:
 
 	movq	%rdi,%rbp
 	movl	$0x80100,%r11d
-	andl	_OPENSSL_ia32cap_P+8(%rip),%r11d
+	andl	OPENSSL_ia32cap_P+8(%rip),%r11d
 	cmpl	$0x80100,%r11d
-	je	L$mulx_scatter
+	je	.Lmulx_scatter
 	movq	(%rdi),%rbx
 	call	__rsaz_512_mul
 
@@ -1274,10 +1298,10 @@ L$mul_scatter4_body:
 	movq	56(%rsp),%r15
 
 	call	__rsaz_512_reduce
-	jmp	L$mul_scatter_tail
+	jmp	.Lmul_scatter_tail
 
-.p2align	5
-L$mulx_scatter:
+.align	32
+.Lmulx_scatter:
 	movq	(%rdi),%rdx
 	call	__rsaz_512_mulx
 
@@ -1296,7 +1320,7 @@ L$mulx_scatter:
 
 	call	__rsaz_512_reducex
 
-L$mul_scatter_tail:
+.Lmul_scatter_tail:
 	addq	64(%rsp),%r8
 	adcq	72(%rsp),%r9
 	adcq	80(%rsp),%r10
@@ -1320,47 +1344,53 @@ L$mul_scatter_tail:
 	movq	%r15,896(%rsi)
 
 	leaq	128+24+48(%rsp),%rax
-
+.cfi_def_cfa	%rax,8
 	movq	-48(%rax),%r15
-
+.cfi_restore	%r15
 	movq	-40(%rax),%r14
-
+.cfi_restore	%r14
 	movq	-32(%rax),%r13
-
+.cfi_restore	%r13
 	movq	-24(%rax),%r12
-
+.cfi_restore	%r12
 	movq	-16(%rax),%rbp
-
+.cfi_restore	%rbp
 	movq	-8(%rax),%rbx
-
+.cfi_restore	%rbx
 	leaq	(%rax),%rsp
-
-L$mul_scatter4_epilogue:
+.cfi_def_cfa_register	%rsp
+.Lmul_scatter4_epilogue:
 	.byte	0xf3,0xc3
-
-
-.globl	_rsaz_512_mul_by_one
-
-.p2align	5
-_rsaz_512_mul_by_one:
-
+.cfi_endproc	
+.size	rsaz_512_mul_scatter4,.-rsaz_512_mul_scatter4
+.globl	rsaz_512_mul_by_one
+.type	rsaz_512_mul_by_one,@function
+.align	32
+rsaz_512_mul_by_one:
+.cfi_startproc	
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-16
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
 
 	subq	$128+24,%rsp
-
-L$mul_by_one_body:
-	movl	_OPENSSL_ia32cap_P+8(%rip),%eax
+.cfi_adjust_cfa_offset	128+24
+.Lmul_by_one_body:
+	movl	OPENSSL_ia32cap_P+8(%rip),%eax
 	movq	%rdx,%rbp
 	movq	%rcx,128(%rsp)
 
@@ -1383,14 +1413,14 @@ L$mul_by_one_body:
 	movdqa	%xmm0,96(%rsp)
 	andl	$0x80100,%eax
 	cmpl	$0x80100,%eax
-	je	L$by_one_callx
+	je	.Lby_one_callx
 	call	__rsaz_512_reduce
-	jmp	L$by_one_tail
-.p2align	5
-L$by_one_callx:
+	jmp	.Lby_one_tail
+.align	32
+.Lby_one_callx:
 	movq	128(%rsp),%rdx
 	call	__rsaz_512_reducex
-L$by_one_tail:
+.Lby_one_tail:
 	movq	%r8,(%rdi)
 	movq	%r9,8(%rdi)
 	movq	%r10,16(%rdi)
@@ -1401,37 +1431,37 @@ L$by_one_tail:
 	movq	%r15,56(%rdi)
 
 	leaq	128+24+48(%rsp),%rax
-
+.cfi_def_cfa	%rax,8
 	movq	-48(%rax),%r15
-
+.cfi_restore	%r15
 	movq	-40(%rax),%r14
-
+.cfi_restore	%r14
 	movq	-32(%rax),%r13
-
+.cfi_restore	%r13
 	movq	-24(%rax),%r12
-
+.cfi_restore	%r12
 	movq	-16(%rax),%rbp
-
+.cfi_restore	%rbp
 	movq	-8(%rax),%rbx
-
+.cfi_restore	%rbx
 	leaq	(%rax),%rsp
-
-L$mul_by_one_epilogue:
+.cfi_def_cfa_register	%rsp
+.Lmul_by_one_epilogue:
 	.byte	0xf3,0xc3
-
-
-
-.p2align	5
+.cfi_endproc	
+.size	rsaz_512_mul_by_one,.-rsaz_512_mul_by_one
+.type	__rsaz_512_reduce,@function
+.align	32
 __rsaz_512_reduce:
-
+.cfi_startproc	
 	movq	%r8,%rbx
 	imulq	128+8(%rsp),%rbx
 	movq	0(%rbp),%rax
 	movl	$8,%ecx
-	jmp	L$reduction_loop
+	jmp	.Lreduction_loop
 
-.p2align	5
-L$reduction_loop:
+.align	32
+.Lreduction_loop:
 	mulq	%rbx
 	movq	8(%rbp),%rax
 	negq	%r8
@@ -1500,23 +1530,23 @@ L$reduction_loop:
 	adcq	$0,%r15
 
 	decl	%ecx
-	jne	L$reduction_loop
+	jne	.Lreduction_loop
 
 	.byte	0xf3,0xc3
-
-
-
-.p2align	5
+.cfi_endproc	
+.size	__rsaz_512_reduce,.-__rsaz_512_reduce
+.type	__rsaz_512_reducex,@function
+.align	32
 __rsaz_512_reducex:
-
+.cfi_startproc	
 
 	imulq	%r8,%rdx
 	xorq	%rsi,%rsi
 	movl	$8,%ecx
-	jmp	L$reduction_loopx
+	jmp	.Lreduction_loopx
 
-.p2align	5
-L$reduction_loopx:
+.align	32
+.Lreduction_loopx:
 	movq	%r8,%rbx
 	mulxq	0(%rbp),%rax,%r8
 	adcxq	%rbx,%rax
@@ -1558,15 +1588,15 @@ L$reduction_loopx:
 	adcxq	%rsi,%r15
 
 	decl	%ecx
-	jne	L$reduction_loopx
+	jne	.Lreduction_loopx
 
 	.byte	0xf3,0xc3
-
-
-
-.p2align	5
+.cfi_endproc	
+.size	__rsaz_512_reducex,.-__rsaz_512_reducex
+.type	__rsaz_512_subtract,@function
+.align	32
 __rsaz_512_subtract:
-
+.cfi_startproc	
 	movq	%r8,(%rdi)
 	movq	%r9,8(%rdi)
 	movq	%r10,16(%rdi)
@@ -1620,12 +1650,12 @@ __rsaz_512_subtract:
 	movq	%r15,56(%rdi)
 
 	.byte	0xf3,0xc3
-
-
-
-.p2align	5
+.cfi_endproc	
+.size	__rsaz_512_subtract,.-__rsaz_512_subtract
+.type	__rsaz_512_mul,@function
+.align	32
 __rsaz_512_mul:
-
+.cfi_startproc	
 	leaq	8(%rsp),%rdi
 
 	movq	(%rsi),%rax
@@ -1680,10 +1710,10 @@ __rsaz_512_mul:
 	leaq	8(%rdi),%rdi
 
 	movl	$7,%ecx
-	jmp	L$oop_mul
+	jmp	.Loop_mul
 
-.p2align	5
-L$oop_mul:
+.align	32
+.Loop_mul:
 	movq	(%rbp),%rbx
 	mulq	%rbx
 	addq	%rax,%r8
@@ -1752,7 +1782,7 @@ L$oop_mul:
 	leaq	8(%rdi),%rdi
 
 	decl	%ecx
-	jnz	L$oop_mul
+	jnz	.Loop_mul
 
 	movq	%r8,(%rdi)
 	movq	%r9,8(%rdi)
@@ -1764,12 +1794,12 @@ L$oop_mul:
 	movq	%r15,56(%rdi)
 
 	.byte	0xf3,0xc3
-
-
-
-.p2align	5
+.cfi_endproc	
+.size	__rsaz_512_mul,.-__rsaz_512_mul
+.type	__rsaz_512_mulx,@function
+.align	32
 __rsaz_512_mulx:
-
+.cfi_startproc	
 	mulxq	(%rsi),%rbx,%r8
 	movq	$-6,%rcx
 
@@ -1798,10 +1828,10 @@ __rsaz_512_mulx:
 	adcq	$0,%r15
 
 	xorq	%rdi,%rdi
-	jmp	L$oop_mulx
+	jmp	.Loop_mulx
 
-.p2align	5
-L$oop_mulx:
+.align	32
+.Loop_mulx:
 	movq	%r8,%rbx
 	mulxq	(%rsi),%rax,%r8
 	adcxq	%rax,%rbx
@@ -1839,7 +1869,7 @@ L$oop_mulx:
 	adcxq	%rdi,%r15
 
 	incq	%rcx
-	jnz	L$oop_mulx
+	jnz	.Loop_mulx
 
 	movq	%r8,%rbx
 	mulxq	(%rsi),%rax,%r8
@@ -1886,36 +1916,36 @@ L$oop_mulx:
 	movq	%r15,8+64+56(%rsp)
 
 	.byte	0xf3,0xc3
-
-
-.globl	_rsaz_512_scatter4
-
-.p2align	4
-_rsaz_512_scatter4:
-
+.cfi_endproc	
+.size	__rsaz_512_mulx,.-__rsaz_512_mulx
+.globl	rsaz_512_scatter4
+.type	rsaz_512_scatter4,@function
+.align	16
+rsaz_512_scatter4:
+.cfi_startproc	
 	leaq	(%rdi,%rdx,8),%rdi
 	movl	$8,%r9d
-	jmp	L$oop_scatter
-.p2align	4
-L$oop_scatter:
+	jmp	.Loop_scatter
+.align	16
+.Loop_scatter:
 	movq	(%rsi),%rax
 	leaq	8(%rsi),%rsi
 	movq	%rax,(%rdi)
 	leaq	128(%rdi),%rdi
 	decl	%r9d
-	jnz	L$oop_scatter
+	jnz	.Loop_scatter
 	.byte	0xf3,0xc3
+.cfi_endproc	
+.size	rsaz_512_scatter4,.-rsaz_512_scatter4
 
-
-
-.globl	_rsaz_512_gather4
-
-.p2align	4
-_rsaz_512_gather4:
-
+.globl	rsaz_512_gather4
+.type	rsaz_512_gather4,@function
+.align	16
+rsaz_512_gather4:
+.cfi_startproc	
 	movd	%edx,%xmm8
-	movdqa	L$inc+16(%rip),%xmm1
-	movdqa	L$inc(%rip),%xmm0
+	movdqa	.Linc+16(%rip),%xmm1
+	movdqa	.Linc(%rip),%xmm0
 
 	pshufd	$0,%xmm8,%xmm8
 	movdqa	%xmm1,%xmm7
@@ -1940,9 +1970,9 @@ _rsaz_512_gather4:
 	pcmpeqd	%xmm8,%xmm6
 	pcmpeqd	%xmm8,%xmm7
 	movl	$8,%r9d
-	jmp	L$oop_gather
-.p2align	4
-L$oop_gather:
+	jmp	.Loop_gather
+.align	16
+.Loop_gather:
 	movdqa	0(%rsi),%xmm8
 	movdqa	16(%rsi),%xmm9
 	movdqa	32(%rsi),%xmm10
@@ -1973,13 +2003,34 @@ L$oop_gather:
 	movq	%xmm8,(%rdi)
 	leaq	8(%rdi),%rdi
 	decl	%r9d
-	jnz	L$oop_gather
+	jnz	.Loop_gather
 	.byte	0xf3,0xc3
-L$SEH_end_rsaz_512_gather4:
+.LSEH_end_rsaz_512_gather4:
+.cfi_endproc	
+.size	rsaz_512_gather4,.-rsaz_512_gather4
 
-
-
-.p2align	6
-L$inc:
+.align	64
+.Linc:
 .long	0,0, 1,1
 .long	2,2, 2,2
+	.section ".note.gnu.property", "a"
+	.p2align 3
+	.long 1f - 0f
+	.long 4f - 1f
+	.long 5
+0:
+	# "GNU" encoded with .byte, since .asciz isn't supported
+	# on Solaris.
+	.byte 0x47
+	.byte 0x4e
+	.byte 0x55
+	.byte 0
+1:
+	.p2align 3
+	.long 0xc0000002
+	.long 3f - 2f
+2:
+	.long 3
+3:
+	.p2align 3
+4:

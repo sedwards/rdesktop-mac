@@ -42,7 +42,7 @@ case "$host_os" in
         SSLOBJ=ssl.o
         PLATFORM_CFLAGS="-DUSE_OPENSSL -I./deps/nla2/deps/openssl-3.0.15/include"
         AC_PATH_XTRA
-        AS_IF([test "x$no_x" = xyes], [AC_MSG_ERROR([Linux requires X11 development headers and libraries])])
+        AS_IF([test "x$no_x" = xyes], [AC_MSG_ERROR([Linux requires X11 development headers and libraries. Install the X11 development package (usually libX11-devel or libx11-dev); see LINUX.md.])])
         PLATFORM_CFLAGS="$PLATFORM_CFLAGS $X_CFLAGS"
         PLATFORM_LIBS="$X_LIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS"
         dnl NLA registers providers from our bundled static OpenSSL build.
@@ -62,13 +62,64 @@ AC_SUBST(NLA_LIBS)
 
 AC_PATH_TOOL(PKG_CONFIG, pkg-config)
 
-# no .pc for GMP
+AS_IF([test "$PLATFORM" = linux], [
+    AS_IF([test -z "$PKG_CONFIG"], [
+        AC_MSG_ERROR([Linux requires the pkg-config command. Install pkg-config or a pkgconf compatibility package; see LINUX.md.])
+    ])
+    AC_PATH_PROGS([MAKE], [gmake make])
+    AS_IF([test -z "$MAKE" || ! "$MAKE" --version 2>/dev/null | $GREP 'GNU Make' >/dev/null], [
+        AC_MSG_ERROR([GNU Make is required. Install make or gmake; see LINUX.md.])
+    ])
+    AC_CHECK_TOOL([AR], [ar])
+    AC_CHECK_TOOL([RANLIB], [ranlib])
+    AS_IF([test -z "$AR" || test -z "$RANLIB"], [
+        AC_MSG_ERROR([An archiver and ranlib are required. Install binutils or the target toolchain for cross builds; see LINUX.md.])
+    ])
+    AC_ARG_VAR([PERL], [Perl 5.10+ interpreter for building bundled OpenSSL])
+    AC_PATH_PROG([PERL], [perl])
+    AC_MSG_CHECKING([for Perl 5.10 or later with core modules for bundled OpenSSL])
+    AS_IF([test -n "$PERL" && "$PERL" -e 'use 5.010; use FindBin; use File::Spec; use File::Path; use File::Basename; use Cwd;' >/dev/null 2>&1], [
+        AC_MSG_RESULT([yes])
+    ], [
+        AC_MSG_RESULT([no])
+        AC_MSG_ERROR([Bundled OpenSSL requires Perl 5.10+ and its core modules. Install perl and, if packaged separately, perl-core; see LINUX.md.])
+    ])
+    dnl Shipped configure files work without regeneration tools.
+    AC_PATH_PROG([AUTOCONF], [autoconf])
+    AC_PATH_PROG([AUTOHEADER], [autoheader])
+    AC_PATH_PROG([AUTORECONF], [autoreconf])
+    AC_PATH_PROG([ACLOCAL], [aclocal])
+    AC_PATH_PROG([AUTOMAKE], [automake])
+    AC_PATH_PROG([LIBTOOLIZE], [libtoolize])
+    AS_IF([test -z "$AUTOCONF" || test -z "$AUTOHEADER" || test -z "$AUTORECONF" || test -z "$ACLOCAL" || test -z "$AUTOMAKE" || test -z "$LIBTOOLIZE"], [
+        AC_MSG_WARN([To regenerate build files, install Autoconf, Automake, and Libtool (autoconf, automake, libtool/libtoolize). They are optional when using the shipped configure files; see LINUX.md.])
+    ])
+    AC_CHECK_HEADER([pthread.h], [], [
+        AC_MSG_ERROR([POSIX thread headers are required. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see LINUX.md.])
+    ])
+    AC_SEARCH_LIBS([pthread_create], [pthread], [], [
+        AC_MSG_ERROR([POSIX threads are required. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see LINUX.md.])
+    ])
+    AC_CHECK_HEADER([dlfcn.h], [], [
+        AC_MSG_ERROR([Dynamic loader headers are required. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see LINUX.md.])
+    ])
+    AC_SEARCH_LIBS([dlopen], [dl], [], [
+        AC_MSG_ERROR([Dynamic loading support is required. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see LINUX.md.])
+    ])
+])
+
+# Check GMP directly for systems without a gmp.pc file.
 case "$host" in
     *-*-darwin*)
         # Bypass GMP check on macOS
         ;;
     *)
-        AC_SEARCH_LIBS([__gmpz_init], [gmp])
+        AC_CHECK_HEADER([gmp.h], [], [
+            AC_MSG_ERROR([GMP development headers are required. Install gmp-devel or libgmp-dev; see LINUX.md.])
+        ])
+        AC_SEARCH_LIBS([__gmpz_init], [gmp], [], [
+            AC_MSG_ERROR([The GMP library is required. Install gmp-devel or libgmp-dev; see LINUX.md.])
+        ])
         ;;
 esac
 
@@ -86,10 +137,13 @@ AC_CHECK_HEADER(sysexits.h, AC_DEFINE(HAVE_SYSEXITS_H, 1, [Define to 1 if you ha
 dnl AC_CHECK_TOOL(STRIP, strip, :)
 STRIP=:
 
-dnl Don't depend on pkg-config
+dnl Keep the macOS fallback, but never silently skip Linux dependency checks.
 m4_ifdef([PKG_CHECK_MODULES], [], [
 		m4_errprint([warning: pkg-config checks are not available])
 		m4_defun([PKG_CHECK_MODULES], [
+			AS_IF([test "$PLATFORM" = linux], [
+				AC_MSG_ERROR([Linux requires pkg-config macros. Install pkg-config/pkgconf development macros and regenerate with aclocal -I m4 and autoconf; see LINUX.md.])
+			])
 			AC_MSG_WARN([pkg-config not available, cannot check for $2])
 			$4
 		])
@@ -108,6 +162,20 @@ AC_ARG_ENABLE([address-sanitizer], AS_HELP_STRING([--enable-address-sanitizer], 
 dnl CredSSP feature
 AC_ARG_ENABLE([credssp], AS_HELP_STRING([--disable-credssp], [disable support for CredSSP]))
 AS_IF([test "x$enable_credssp" != "xno"], [
+	AS_IF([test "$PLATFORM" = linux], [
+		AC_CHECK_HEADER([zlib.h], [], [
+			AC_MSG_ERROR([CredSSP/NLA requires zlib development headers. Install zlib-devel or zlib1g-dev, or use --disable-credssp; see LINUX.md.])
+		])
+		AC_SEARCH_LIBS([compress], [z], [], [
+			AC_MSG_ERROR([CredSSP/NLA requires zlib. Install zlib-devel or zlib1g-dev, or use --disable-credssp; see LINUX.md.])
+		])
+		AC_SEARCH_LIBS([pow], [m], [], [
+			AC_MSG_ERROR([CredSSP/NLA requires the system math library. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see LINUX.md.])
+		])
+		AC_CHECK_HEADER([sys/timerfd.h], [], [
+			AC_MSG_ERROR([Linux CredSSP/NLA requires sys/timerfd.h for WinPR timers. Install the C library development package (glibc-devel, musl-dev, or libc6-dev), or use --disable-credssp; see LINUX.md.])
+		])
+	])
 	case "$host" in
 	     *-*-darwin*)
 		AC_CHECK_HEADER(GSS/gssapi.h, [WITH_CREDSSP=1], [WITH_CREDSSP=0])
@@ -130,7 +198,8 @@ AS_IF([test "x$enable_credssp" != "xno"], [
 	      AC_DEFINE(WITH_CREDSSP, 1, [Define to 1 if CredSSP support is enabled])
 	  else
 		echo
-		echo "CredSSP support requires GSSAPI, install the dependency"
+		echo "CredSSP support requires Kerberos/GSSAPI development files and krb5-gssapi pkg-config metadata."
+		echo "Install krb5-devel or libkrb5-dev; see LINUX.md,"
 		echo "or disable the feature using --disable-credssp."
 		echo
 		exit 1
@@ -139,12 +208,22 @@ AS_IF([test "x$enable_credssp" != "xno"], [
 AC_SUBST(CREDSSPOBJ)
 
 AS_IF([test "$PLATFORM" = linux], [
+    AS_IF([test "$cross_compiling" = yes], [
+        AC_MSG_NOTICE([skipping the XWayland runtime check when cross-compiling])
+    ], [
+        AC_PATH_PROG([XWAYLAND], [Xwayland])
+        AS_IF([test -z "$XWAYLAND"], [
+            AC_MSG_WARN([Xwayland was not found in PATH. Wayland sessions require an XWayland runtime package (usually xwayland or xorg-x11-server-Xwayland). X11 sessions still work; see LINUX.md.])
+        ])
+    ])
     PKG_CHECK_MODULES(XRANDR, xrandr, [
         AC_DEFINE(HAVE_XRANDR, 1, [Define if Xrandr is available])
         CFLAGS="$CFLAGS $XRANDR_CFLAGS"
         LIBS="$LIBS $XRANDR_LIBS"
-    ], [:])
-    PKG_CHECK_MODULES(XCURSOR, xcursor)
+    ], [AC_MSG_NOTICE([Optional Xrandr support is unavailable. Install the Xrandr development package (libXrandr-devel or libxrandr-dev) to enable it; see LINUX.md.])])
+    PKG_CHECK_MODULES(XCURSOR, xcursor, [], [
+        AC_MSG_ERROR([Xcursor development files and pkg-config metadata are required. Install libXcursor-devel or libxcursor-dev; see LINUX.md.])
+    ])
     CFLAGS="$CFLAGS $XCURSOR_CFLAGS"
     LIBS="$LIBS $XCURSOR_LIBS"
 ])
@@ -163,7 +242,7 @@ case "$host" in
             LIBS="$LIBS $LIBTASN1_LIBS"
         else
             echo
-            echo "rdesktop requires libtasn1. Please install the dependency"
+            echo "rdesktop requires libtasn1 development files. Install libtasn1-devel or libtasn1-6-dev; see LINUX.md."
             echo
             exit 1
         fi
@@ -184,7 +263,7 @@ case "$host" in
             LIBS="$LIBS $NETTLE_LIBS"
         else
             echo
-            echo "rdesktop requires Nettle. Please install the dependency"
+            echo "rdesktop requires Nettle development files. Install nettle-devel or nettle-dev; see LINUX.md."
             echo
             exit 1
         fi
@@ -205,7 +284,7 @@ case "$host" in
             LIBS="$LIBS $HOGWEED_LIBS"
         else
             echo
-            echo "rdesktop requires hogweed. Please install the dependency"
+            echo "rdesktop requires Hogweed development files, normally part of nettle-devel or nettle-dev; see LINUX.md."
             echo
             exit 1
         fi
@@ -226,7 +305,7 @@ case "$host" in
             LIBS="$LIBS $GNUTLS_LIBS"
         else
             echo
-            echo "rdesktop requires GnuTLS. Please install the dependency"
+            echo "rdesktop requires GnuTLS >= 3.2.0 development files. Install gnutls-devel or libgnutls28-dev; see LINUX.md."
             echo
             exit 1
         fi
@@ -259,7 +338,7 @@ AS_IF([test "x$enable_smartcard" != "xno"], [
 	   AC_DEFINE(WITH_SCARD, 1, [Define to 1 if smartcard support is enabled])
 	else
 	   echo
-	   echo "SmartCard support requires PCSC, install the dependency"
+	   echo "SmartCard support requires PCSC-lite development files. Install pcsc-lite-devel or libpcsclite-dev; see LINUX.md,"
 	   echo "or disable the feature using --disable-smartcard."
 	   echo
 	   exit 1

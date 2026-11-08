@@ -1128,13 +1128,13 @@ ASN1_OCTET_STRING *a2i_IPADDRESS_NC(const char *ipasc)
     char *iptmp = NULL, *p;
     int iplen1, iplen2;
 
-    p = strchr(ipasc, '/');
-    if (p == NULL)
+    const char *slash = strchr(ipasc, '/');
+    if (slash == NULL)
         return NULL;
     iptmp = OPENSSL_strdup(ipasc);
     if (iptmp == NULL)
         return NULL;
-    p = iptmp + (p - ipasc);
+    p = iptmp + (slash - ipasc);
     *p++ = 0;
 
     iplen1 = ossl_a2i_ipadd(ipout, iptmp);

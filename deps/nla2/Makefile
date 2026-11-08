@@ -4,6 +4,8 @@ srcdir = .
 
 
 CC = gcc
+AR = ar
+RANLIB = ranlib
 CFLAGS = -g -O2 -std=gnu11 -fPIC -fvisibility=hidden -fno-omit-frame-pointer -Wredundant-decls -fsigned-char -Wimplicit-function-declaration -Werror
 CPPFLAGS = 
 LDFLAGS = 
@@ -97,7 +99,8 @@ $(LIB_TARGET): $(ALL_OBJS)
 
 $(STATIC_TARGET): $(ALL_OBJS)
 	$(RM) $@
-	ar rcs $@ $(ALL_OBJS)
+	$(AR) rcs $@ $(ALL_OBJS)
+	$(RANLIB) $@
 
 $(TEST_TARGET): test_nlav2.o $(STATIC_TARGET)
 	$(CC) $(LDFLAGS) -o $@ test_nlav2.o $(STATIC_TARGET) $(OPENSSL_LIBS) $(PTHREAD_LIBS) $(DL_LIBS) $(LIBS)

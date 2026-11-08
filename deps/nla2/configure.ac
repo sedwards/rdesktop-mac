@@ -6,9 +6,18 @@ AC_CONFIG_HEADERS([config.h])
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
+AC_CANONICAL_HOST
+AC_PATH_PROGS([MAKE], [gmake make])
+AS_IF([test -z "$MAKE" || ! "$MAKE" --version 2>/dev/null | grep 'GNU Make' >/dev/null], [
+    AC_MSG_ERROR([GNU Make is required. Install make or gmake; see ../../LINUX.md.])
+])
+AC_CHECK_TOOL([AR], [ar])
+AC_CHECK_TOOL([RANLIB], [ranlib])
+AS_IF([test -z "$AR" || test -z "$RANLIB"], [
+    AC_MSG_ERROR([NLA requires an archiver and ranlib. Install binutils or the target cross toolchain; see ../../LINUX.md.])
+])
 
 # Detect Host OS for shared library suffix and linking flags
-AC_CANONICAL_HOST
 case "$host_os" in
   darwin*)
     PLATFORM=macos
@@ -30,6 +39,8 @@ esac
 AS_IF([test "$PLATFORM" = linux], [
   AC_CHECK_HEADER([sys/timerfd.h], [
     PLATFORM_DEFS="$PLATFORM_DEFS -DWINPR_HAVE_SYS_TIMERFD_H"
+  ], [
+    AC_MSG_ERROR([Linux NLA requires sys/timerfd.h. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see ../../LINUX.md.])
   ])
 ])
 
@@ -59,7 +70,7 @@ AC_SUBST([OPENSSL_LIBS])
 AC_CHECK_LIB([pthread], [pthread_create], [
     PTHREAD_LIBS="-lpthread"
 ], [
-    AC_MSG_ERROR([pthread library not found])
+    AC_MSG_ERROR([POSIX threads are required. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see ../../LINUX.md.])
 ])
 AC_SUBST([PTHREAD_LIBS])
 
@@ -72,11 +83,14 @@ AC_CHECK_LIB([dl], [dlopen], [
 AC_SUBST([DL_LIBS])
 
 # Codecs included in the shared library also need zlib and libm.
+AC_CHECK_HEADER([zlib.h], [], [
+    AC_MSG_ERROR([NLA requires zlib development headers. Install zlib-devel or zlib1g-dev; see ../../LINUX.md.])
+])
 AC_SEARCH_LIBS([compress], [z], [], [
-    AC_MSG_ERROR([zlib is required (Debian/Ubuntu: zlib1g-dev)])
+    AC_MSG_ERROR([NLA requires zlib. Install zlib-devel or zlib1g-dev; see ../../LINUX.md.])
 ])
 AC_SEARCH_LIBS([pow], [m], [], [
-    AC_MSG_ERROR([the system math library is required])
+    AC_MSG_ERROR([The system math library is required. Install the C library development package (glibc-devel, musl-dev, or libc6-dev); see ../../LINUX.md.])
 ])
 
 # Checks for header files.

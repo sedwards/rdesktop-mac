@@ -19,6 +19,10 @@ In addition to the build requirements of rdesktop itself, you also need:
 This will build and run each test in turn. Re-running `make` will
 recompile the tests as necessary, and run them again.
 
+All test compilation uses `-Werror`. The Makefile accepts `CPPFLAGS` and
+`LDFLAGS` when Cgreen is installed under a nonstandard prefix, and
+`CGREEN_RUNNER` can select its test runner.
+
 The display-selection tests can also run independently, without Cgreen or a
 running X server:
 

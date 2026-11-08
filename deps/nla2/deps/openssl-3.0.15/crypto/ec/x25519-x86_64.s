@@ -1,25 +1,31 @@
 .text	
 
-.globl	_x25519_fe51_mul
-
-.p2align	5
-_x25519_fe51_mul:
-
+.globl	x25519_fe51_mul
+.type	x25519_fe51_mul,@function
+.align	32
+x25519_fe51_mul:
+.cfi_startproc	
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-16
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
 	leaq	-40(%rsp),%rsp
-
-L$fe51_mul_body:
+.cfi_adjust_cfa_offset	40
+.Lfe51_mul_body:
 
 	movq	0(%rsi),%rax
 	movq	0(%rdx),%r11
@@ -146,31 +152,37 @@ L$fe51_mul_body:
 	adcq	%rdx,%r15
 
 	movq	32(%rsp),%rdi
-	jmp	L$reduce51
-L$fe51_mul_epilogue:
+	jmp	.Lreduce51
+.Lfe51_mul_epilogue:
+.cfi_endproc	
+.size	x25519_fe51_mul,.-x25519_fe51_mul
 
-
-
-.globl	_x25519_fe51_sqr
-
-.p2align	5
-_x25519_fe51_sqr:
-
+.globl	x25519_fe51_sqr
+.type	x25519_fe51_sqr,@function
+.align	32
+x25519_fe51_sqr:
+.cfi_startproc	
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-16
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
 	leaq	-40(%rsp),%rsp
-
-L$fe51_sqr_body:
+.cfi_adjust_cfa_offset	40
+.Lfe51_sqr_body:
 
 	movq	0(%rsi),%rax
 	movq	16(%rsi),%r15
@@ -249,10 +261,10 @@ L$fe51_sqr_body:
 	adcq	%rdx,%r9
 
 	movq	32(%rsp),%rdi
-	jmp	L$reduce51
+	jmp	.Lreduce51
 
-.p2align	5
-L$reduce51:
+.align	32
+.Lreduce51:
 	movq	$0x7ffffffffffff,%rbp
 
 	movq	%r10,%rdx
@@ -313,44 +325,50 @@ L$reduce51:
 	movq	%r10,32(%rdi)
 
 	movq	40(%rsp),%r15
-
+.cfi_restore	%r15
 	movq	48(%rsp),%r14
-
+.cfi_restore	%r14
 	movq	56(%rsp),%r13
-
+.cfi_restore	%r13
 	movq	64(%rsp),%r12
-
+.cfi_restore	%r12
 	movq	72(%rsp),%rbx
-
+.cfi_restore	%rbx
 	movq	80(%rsp),%rbp
-
+.cfi_restore	%rbp
 	leaq	88(%rsp),%rsp
-
-L$fe51_sqr_epilogue:
+.cfi_adjust_cfa_offset	88
+.Lfe51_sqr_epilogue:
 	.byte	0xf3,0xc3
+.cfi_endproc	
+.size	x25519_fe51_sqr,.-x25519_fe51_sqr
 
-
-
-.globl	_x25519_fe51_mul121666
-
-.p2align	5
-_x25519_fe51_mul121666:
-
+.globl	x25519_fe51_mul121666
+.type	x25519_fe51_mul121666,@function
+.align	32
+x25519_fe51_mul121666:
+.cfi_startproc	
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-16
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
 	leaq	-40(%rsp),%rsp
-
-L$fe51_mul121666_body:
+.cfi_adjust_cfa_offset	40
+.Lfe51_mul121666_body:
 	movl	$121666,%eax
 
 	mulq	0(%rsi)
@@ -373,47 +391,54 @@ L$fe51_mul121666_body:
 	movq	%rax,%r14
 	movq	%rdx,%r15
 
-	jmp	L$reduce51
-L$fe51_mul121666_epilogue:
+	jmp	.Lreduce51
+.Lfe51_mul121666_epilogue:
+.cfi_endproc	
+.size	x25519_fe51_mul121666,.-x25519_fe51_mul121666
 
-
-
-.globl	_x25519_fe64_eligible
-
-.p2align	5
-_x25519_fe64_eligible:
-
-	movl	_OPENSSL_ia32cap_P+8(%rip),%ecx
+.globl	x25519_fe64_eligible
+.type	x25519_fe64_eligible,@function
+.align	32
+x25519_fe64_eligible:
+.cfi_startproc	
+	movl	OPENSSL_ia32cap_P+8(%rip),%ecx
 	xorl	%eax,%eax
 	andl	$0x80100,%ecx
 	cmpl	$0x80100,%ecx
 	cmovel	%ecx,%eax
 	.byte	0xf3,0xc3
+.cfi_endproc	
+.size	x25519_fe64_eligible,.-x25519_fe64_eligible
 
-
-
-.globl	_x25519_fe64_mul
-
-.p2align	5
-_x25519_fe64_mul:
-
+.globl	x25519_fe64_mul
+.type	x25519_fe64_mul,@function
+.align	32
+x25519_fe64_mul:
+.cfi_startproc	
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-16
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
 	pushq	%rdi
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rdi,-64
 	leaq	-16(%rsp),%rsp
-
-L$fe64_mul_body:
+.cfi_adjust_cfa_offset	16
+.Lfe64_mul_body:
 
 	movq	%rdx,%rax
 	movq	0(%rdx),%rbp
@@ -479,33 +504,40 @@ L$fe64_mul_body:
 	adcxq	%rdi,%r15
 	adoxq	%rdi,%r15
 
-	jmp	L$reduce64
-L$fe64_mul_epilogue:
+	jmp	.Lreduce64
+.Lfe64_mul_epilogue:
+.cfi_endproc	
+.size	x25519_fe64_mul,.-x25519_fe64_mul
 
-
-
-.globl	_x25519_fe64_sqr
-
-.p2align	5
-_x25519_fe64_sqr:
-
+.globl	x25519_fe64_sqr
+.type	x25519_fe64_sqr,@function
+.align	32
+x25519_fe64_sqr:
+.cfi_startproc	
 	pushq	%rbp
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-16
 	pushq	%rbx
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-24
 	pushq	%r12
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
 	pushq	%r13
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
 	pushq	%r14
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
 	pushq	%r15
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
 	pushq	%rdi
-
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rdi,-64
 	leaq	-16(%rsp),%rsp
-
-L$fe64_sqr_body:
+.cfi_adjust_cfa_offset	16
+.Lfe64_sqr_body:
 
 	movq	0(%rsi),%rdx
 	movq	8(%rsi),%rcx
@@ -559,10 +591,10 @@ L$fe64_sqr_body:
 	adoxq	%rax,%r14
 	adcxq	%rdi,%r15
 	adoxq	%rdi,%r15
-	jmp	L$reduce64
+	jmp	.Lreduce64
 
-.p2align	5
-L$reduce64:
+.align	32
+.Lreduce64:
 	mulxq	%r12,%rax,%rbx
 	adcxq	%rax,%r8
 	adoxq	%rbx,%r9
@@ -595,30 +627,30 @@ L$reduce64:
 	movq	%r8,0(%rdi)
 
 	movq	24(%rsp),%r15
-
+.cfi_restore	%r15
 	movq	32(%rsp),%r14
-
+.cfi_restore	%r14
 	movq	40(%rsp),%r13
-
+.cfi_restore	%r13
 	movq	48(%rsp),%r12
-
+.cfi_restore	%r12
 	movq	56(%rsp),%rbx
-
+.cfi_restore	%rbx
 	movq	64(%rsp),%rbp
-
+.cfi_restore	%rbp
 	leaq	72(%rsp),%rsp
-
-L$fe64_sqr_epilogue:
+.cfi_adjust_cfa_offset	88
+.Lfe64_sqr_epilogue:
 	.byte	0xf3,0xc3
+.cfi_endproc	
+.size	x25519_fe64_sqr,.-x25519_fe64_sqr
 
-
-
-.globl	_x25519_fe64_mul121666
-
-.p2align	5
-_x25519_fe64_mul121666:
-L$fe64_mul121666_body:
-
+.globl	x25519_fe64_mul121666
+.type	x25519_fe64_mul121666,@function
+.align	32
+x25519_fe64_mul121666:
+.Lfe64_mul121666_body:
+.cfi_startproc	
 	movl	$121666,%edx
 	mulxq	0(%rsi),%r8,%rcx
 	mulxq	8(%rsi),%r9,%rax
@@ -645,17 +677,17 @@ L$fe64_mul121666_body:
 	movq	%r11,24(%rdi)
 	movq	%r8,0(%rdi)
 
-L$fe64_mul121666_epilogue:
+.Lfe64_mul121666_epilogue:
 	.byte	0xf3,0xc3
+.cfi_endproc	
+.size	x25519_fe64_mul121666,.-x25519_fe64_mul121666
 
-
-
-.globl	_x25519_fe64_add
-
-.p2align	5
-_x25519_fe64_add:
-L$fe64_add_body:
-
+.globl	x25519_fe64_add
+.type	x25519_fe64_add,@function
+.align	32
+x25519_fe64_add:
+.Lfe64_add_body:
+.cfi_startproc	
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -682,17 +714,17 @@ L$fe64_add_body:
 	addq	%rax,%r8
 	movq	%r8,0(%rdi)
 
-L$fe64_add_epilogue:
+.Lfe64_add_epilogue:
 	.byte	0xf3,0xc3
+.cfi_endproc	
+.size	x25519_fe64_add,.-x25519_fe64_add
 
-
-
-.globl	_x25519_fe64_sub
-
-.p2align	5
-_x25519_fe64_sub:
-L$fe64_sub_body:
-
+.globl	x25519_fe64_sub
+.type	x25519_fe64_sub,@function
+.align	32
+x25519_fe64_sub:
+.Lfe64_sub_body:
+.cfi_startproc	
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -719,17 +751,17 @@ L$fe64_sub_body:
 	subq	%rax,%r8
 	movq	%r8,0(%rdi)
 
-L$fe64_sub_epilogue:
+.Lfe64_sub_epilogue:
 	.byte	0xf3,0xc3
+.cfi_endproc	
+.size	x25519_fe64_sub,.-x25519_fe64_sub
 
-
-
-.globl	_x25519_fe64_tobytes
-
-.p2align	5
-_x25519_fe64_tobytes:
-L$fe64_to_body:
-
+.globl	x25519_fe64_tobytes
+.type	x25519_fe64_tobytes,@function
+.align	32
+x25519_fe64_tobytes:
+.Lfe64_to_body:
+.cfi_startproc	
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -763,8 +795,29 @@ L$fe64_to_body:
 	movq	%r10,16(%rdi)
 	movq	%r11,24(%rdi)
 
-L$fe64_to_epilogue:
+.Lfe64_to_epilogue:
 	.byte	0xf3,0xc3
-
-
+.cfi_endproc	
+.size	x25519_fe64_tobytes,.-x25519_fe64_tobytes
 .byte	88,50,53,53,49,57,32,112,114,105,109,105,116,105,118,101,115,32,102,111,114,32,120,56,54,95,54,52,44,32,67,82,89,80,84,79,71,65,77,83,32,98,121,32,60,97,112,112,114,111,64,111,112,101,110,115,115,108,46,111,114,103,62,0
+	.section ".note.gnu.property", "a"
+	.p2align 3
+	.long 1f - 0f
+	.long 4f - 1f
+	.long 5
+0:
+	# "GNU" encoded with .byte, since .asciz isn't supported
+	# on Solaris.
+	.byte 0x47
+	.byte 0x4e
+	.byte 0x55
+	.byte 0
+1:
+	.p2align 3
+	.long 0xc0000002
+	.long 3f - 2f
+2:
+	.long 3
+3:
+	.p2align 3
+4:

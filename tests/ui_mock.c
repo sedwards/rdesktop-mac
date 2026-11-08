@@ -118,3 +118,8 @@ ui_seamless_end()
 {
   mock();
 }
+
+void ui_update_window_sizehints(uint32 width, uint32 height)
+{
+  mock(width, height);
+}

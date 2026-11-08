@@ -1,5 +1,7 @@
 #include <cgreen/cgreen.h>
 #include <cgreen/mocks.h>
+/* The client uses POSIX times(), which collides with Cgreen's times() macro. */
+#undef times
 #include "../rdesktop.h"
 #include "../proto.h"
 #include <locale.h>
@@ -32,7 +34,7 @@ Ensure(ParseGeometry, HandlesWxH)
 
   assert_that(g_requested_session_width, is_equal_to(1234));
   assert_that(g_requested_session_height, is_equal_to(2345));
-  assert_that(g_window_size_type, is_equal_to(Fixed));
+  assert_that(g_window_size_type, is_equal_to(RDP_Fixed));
 }
 
 Ensure(ParseGeometry, FailsOnMissingHeight)
@@ -45,7 +47,7 @@ Ensure(ParseGeometry, FailsOnMissingHeight)
 
   assert_that(g_requested_session_width, is_equal_to(1234));
   assert_that(g_requested_session_height, is_equal_to(0));
-  assert_that(g_window_size_type, is_equal_to(Fixed));
+  assert_that(g_window_size_type, is_equal_to(RDP_Fixed));
 }
 
 Ensure(ParseGeometry, FailsOnMissingHeightVariant2)
@@ -57,7 +59,7 @@ Ensure(ParseGeometry, FailsOnMissingHeightVariant2)
 
   assert_that(g_requested_session_width, is_equal_to(1234));
   assert_that(g_requested_session_height, is_equal_to(0));
-  assert_that(g_window_size_type, is_equal_to(Fixed));
+  assert_that(g_window_size_type, is_equal_to(RDP_Fixed));
 }
 
 Ensure(ParseGeometry, HandlesPercentageOfScreen)
@@ -91,7 +93,7 @@ Ensure(ParseGeometry, HandlesSpecifiedDPI)
   assert_that(g_dpi, is_equal_to(234));
   assert_that(g_requested_session_width, is_equal_to(1234));
   assert_that(g_requested_session_height, is_equal_to(2345));
-  assert_that(g_window_size_type, is_equal_to(Fixed));
+  assert_that(g_window_size_type, is_equal_to(RDP_Fixed));
 }
 
 
@@ -106,7 +108,7 @@ Ensure(ParseGeometry, HandlesSpecifiedXPosition)
   assert_that(g_pos, is_equal_to(1));
   assert_that(g_requested_session_width, is_equal_to(1234));
   assert_that(g_requested_session_height, is_equal_to(2345));
-  assert_that(g_window_size_type, is_equal_to(Fixed));
+  assert_that(g_window_size_type, is_equal_to(RDP_Fixed));
 }
 
 Ensure(ParseGeometry, HandlesSpecifiedNegativeXPosition)
@@ -120,7 +122,7 @@ Ensure(ParseGeometry, HandlesSpecifiedNegativeXPosition)
   assert_that(g_pos, is_equal_to(2));
   assert_that(g_requested_session_width, is_equal_to(1234));
   assert_that(g_requested_session_height, is_equal_to(2345));
-  assert_that(g_window_size_type, is_equal_to(Fixed));
+  assert_that(g_window_size_type, is_equal_to(RDP_Fixed));
 }
 
 Ensure(ParseGeometry, HandlesSpecifiedNegativeXAndYPosition)
@@ -134,7 +136,7 @@ Ensure(ParseGeometry, HandlesSpecifiedNegativeXAndYPosition)
   assert_that(g_pos, is_equal_to(2 | 4));
   assert_that(g_requested_session_width, is_equal_to(1234));
   assert_that(g_requested_session_height, is_equal_to(2345));
-  assert_that(g_window_size_type, is_equal_to(Fixed));
+  assert_that(g_window_size_type, is_equal_to(RDP_Fixed));
 }
 
 Ensure(ParseGeometry, HandlesSpecifiedXandYPosition)
@@ -148,7 +150,7 @@ Ensure(ParseGeometry, HandlesSpecifiedXandYPosition)
   assert_that(g_pos, is_equal_to(1));
   assert_that(g_requested_session_width, is_equal_to(1234));
   assert_that(g_requested_session_height, is_equal_to(2345));
-  assert_that(g_window_size_type, is_equal_to(Fixed));
+  assert_that(g_window_size_type, is_equal_to(RDP_Fixed));
 }
 
 Ensure(ParseGeometry, HandlesSpecifiedXandYPositionWithDPI)
@@ -162,7 +164,7 @@ Ensure(ParseGeometry, HandlesSpecifiedXandYPositionWithDPI)
   assert_that(g_ypos, is_equal_to(234));
   assert_that(g_requested_session_width, is_equal_to(1234));
   assert_that(g_requested_session_height, is_equal_to(2345));
-  assert_that(g_window_size_type, is_equal_to(Fixed));
+  assert_that(g_window_size_type, is_equal_to(RDP_Fixed));
 }
 
 Ensure(ParseGeometry, HandlesSpecialNameWorkarea)
@@ -200,10 +202,10 @@ Ensure(ParseGeometry, FailsOnMixingPixelsAndPercents)
 {
   always_expect_error_log();
 
-  g_window_size_type = Fixed;
+  g_window_size_type = RDP_Fixed;
   assert_that(parse_geometry_string("1234%x2345"), is_equal_to(-1));
 
-  g_window_size_type = Fixed;
+  g_window_size_type = RDP_Fixed;
   assert_that(parse_geometry_string("1234x2345%"), is_equal_to(-1));
 }
 
@@ -211,19 +213,19 @@ Ensure(ParseGeometry, FailsOnGarbageAtEndOfString)
 {
   always_expect_error_log();
 
-  g_window_size_type = Fixed;
+  g_window_size_type = RDP_Fixed;
   assert_that(parse_geometry_string("1234%1239123081232345abcdefgadkfjafa4af048"), is_equal_to(-1));
 
-  g_window_size_type = Fixed;
+  g_window_size_type = RDP_Fixed;
   assert_that(parse_geometry_string("1235abcer9823461"), is_equal_to(-1));
 
-  g_window_size_type = Fixed;
+  g_window_size_type = RDP_Fixed;
   assert_that(parse_geometry_string("1235%x123%+123123+123123asdkjfasdf"), is_equal_to(-1));
 
-  g_window_size_type = Fixed;
+  g_window_size_type = RDP_Fixed;
   assert_that(parse_geometry_string("1235%x123%@123asdkjfasdf"), is_equal_to(-1));
 
-  g_window_size_type = Fixed;
+  g_window_size_type = RDP_Fixed;
   assert_that(parse_geometry_string("1235%x123%@123+1-2asdkjfasdf"), is_equal_to(-1));
 }
 

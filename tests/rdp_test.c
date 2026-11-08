@@ -24,9 +24,13 @@ int g_server_depth;
 RD_BOOL g_bitmap_cache;
 RD_BOOL g_bitmap_cache_persist_enable;
 RD_BOOL g_numlock_sync;
+RD_BOOL g_dynamic_session_resize;
+uint32 g_requested_session_width;
+uint32 g_requested_session_height;
+RD_BOOL g_fullscreen;
 RD_BOOL g_pending_resize;
+struct timeval g_pending_resize_defer_timer;
 RD_BOOL g_network_error;
-time_t g_wait_for_deactivate_ts;
 RDPCOMP g_mppc_dict;
 RD_BOOL g_redirect;
 char *g_redirect_server;
@@ -131,8 +135,10 @@ Ensure(RDP, ProcessBitmapCapsCallsUiResizeWindow) {
   out_uint16_le(&s, 1024);
   out_uint16_le(&s, 768);
   s_mark_end(&s);
-  s_reset(&s);
+  s_seek(&s, 0);
 
+  g_first_bitmap_caps = False;
+  g_dynamic_session_resize = True;
   rdp_process_bitmap_caps(&s);
 
   free(s.data);
